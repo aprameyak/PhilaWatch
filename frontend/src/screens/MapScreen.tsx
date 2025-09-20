@@ -27,9 +27,9 @@ const MapScreen = () => {
   const webViewRef = useRef(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState(null);
-  const [crimeData, setCrimeData] = useState([]);
-  const { incidents, loading: incidentsLoading, error: incidentsError, refetch } = useCrime();
+  const [userLocation, setUserLocation] = useState<{lat: number, lng: number} | null>(null);
+  const [crimeData, setCrimeData] = useState<any[]>([]);
+  const { incidents, loading: incidentsLoading, error: incidentsError } = useCrime();
   const [currentFilters] = useState({
     timeRange: "7d",
     crimeTypes: [],
@@ -64,7 +64,6 @@ const MapScreen = () => {
   };
 
   const handleReportPress = () => {
-    // Alert.alert('Report Crime', 'Report functionality would open here');
     navigation.navigate("SnapShot");
   };
 
@@ -76,9 +75,6 @@ const MapScreen = () => {
     Alert.alert("Filters", "Filter functionality would open here");
   };
 
-  const handleProfilePress = () => {
-    Alert.alert("Profile", "Profile functionality would open here");
-  };
 
   // Single HTML file with everything embedded
   const createMapHTML = () => {
@@ -116,7 +112,129 @@ const MapScreen = () => {
         const crimeData = ${crimeDataJson};
         const userLocation = ${userLocationJson};
         
+        // Tooltip configuration
+        const RADIUS_METERS = 200; // Constant radius for incident queries
+        let tooltipTimeout;
+        
         console.log('Loading map with', crimeData.length, 'crime incidents');
+        
+        // Distance calculation function
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+          const R = 6371000; // Earth's radius in meters
+          const dLat = (lat2 - lat1) * Math.PI / 180;
+          const dLng = (lng2 - lng1) * Math.PI / 180;
+          const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLng/2) * Math.sin(dLng/2);
+          const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c; // Distance in meters
+        }
+        
+        // Query incidents within radius
+        function queryIncidentsInRadius(lat, lng, radiusMeters) {
+          return crimeData.filter(incident => {
+            const distance = calculateDistance(lat, lng, incident.latitude, incident.longitude);
+            return distance <= radiusMeters;
+          });
+        }
+        
+        // Hide existing tooltip
+        function hideTooltip() {
+          const existingTooltip = document.getElementById('tap-tooltip');
+          if (existingTooltip) {
+            existingTooltip.remove();
+          }
+          if (tooltipTimeout) {
+            clearTimeout(tooltipTimeout);
+          }
+        }
+        
+        // Show tooltip with incident details
+        function showTooltip(incidents, latLng, event) {
+          hideTooltip();
+          
+          // Create tooltip element
+          const tooltip = document.createElement('div');
+          tooltip.id = 'tap-tooltip';
+          
+          // Get crime type breakdown
+          const crimeTypes = {};
+          incidents.forEach(incident => {
+            const type = incident.crime_type || 'Unknown';
+            crimeTypes[type] = (crimeTypes[type] || 0) + 1;
+          });
+          
+          const crimeTypeList = Object.entries(crimeTypes)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(([type, count]) => \`• \${type} (\${count})\`)
+            .join('<br>');
+          
+          tooltip.innerHTML = \`
+            <div style="
+              background: rgba(0,0,0,0.9);
+              color: white;
+              padding: 12px 16px;
+              border-radius: 8px;
+              font-size: 14px;
+              pointer-events: none;
+              z-index: 1000;
+              max-width: 250px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            ">
+              <strong>\${incidents.length} incidents</strong><br>
+              <span style="color: #ccc;">Within \${RADIUS_METERS}m radius</span>
+              \${incidents.length > 0 ? \`
+                <br><br>
+                <strong>Crime Types:</strong><br>
+                \${crimeTypeList}
+                \${Object.keys(crimeTypes).length > 3 ? \`<br>... and \${Object.keys(crimeTypes).length - 3} more types\` : ''}
+              \` : ''}
+            </div>
+          \`;
+          
+          // Position tooltip at tap location
+          const mapDiv = document.getElementById('map');
+          const rect = mapDiv.getBoundingClientRect();
+          tooltip.style.position = 'absolute';
+          tooltip.style.left = (event.pixel.x + 10) + 'px';
+          tooltip.style.top = (event.pixel.y - 10) + 'px';
+          
+          // Ensure tooltip stays within map bounds
+          const tooltipRect = tooltip.getBoundingClientRect();
+          if (event.pixel.x + 250 > rect.width) {
+            tooltip.style.left = (event.pixel.x - 260) + 'px';
+          }
+          if (event.pixel.y - 100 < 0) {
+            tooltip.style.top = (event.pixel.y + 20) + 'px';
+          }
+          
+          mapDiv.appendChild(tooltip);
+          
+          // Auto-hide after 4 seconds
+          tooltipTimeout = setTimeout(hideTooltip, 4000);
+        }
+        
+        // Add tap functionality to map
+        function addTapTooltipFunctionality() {
+          map.addListener('click', (event) => {
+            const lat = event.latLng.lat();
+            const lng = event.latLng.lng();
+            
+            console.log('Map tapped at:', lat, lng);
+            
+            // Query incidents in radius around tap point
+            const incidents = queryIncidentsInRadius(lat, lng, RADIUS_METERS);
+            
+            console.log('Found', incidents.length, 'incidents within', RADIUS_METERS, 'meters');
+            
+            // Show tooltip with results
+            showTooltip(incidents, event.latLng, event);
+          });
+          
+          console.log('Tap tooltip functionality added');
+        }
         
         function initMap() {
           try {
@@ -193,6 +311,9 @@ const MapScreen = () => {
             }
             
             
+            // Add tap functionality for tooltips
+            addTapTooltipFunctionality();
+            
             // Notify React Native that map is ready
             setTimeout(function() {
               if (window.ReactNativeWebView) {
@@ -246,7 +367,7 @@ const MapScreen = () => {
     `;
   };
 
-  const handleWebViewMessage = (event) => {
+  const handleWebViewMessage = (event: any) => {
     try {
       const message = JSON.parse(event.nativeEvent.data);
 
@@ -278,15 +399,10 @@ const MapScreen = () => {
           </Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>PhillyWatch</Text>
-        <TouchableOpacity
-          style={styles.headerButton}
-          onPress={handleProfilePress}
-        >
           <Text>
             {" "}
             <Ionicons name={"person-circle-outline"} size={25} />
           </Text>
-        </TouchableOpacity>
       </View>
 
       {/* Search Bar */}

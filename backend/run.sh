@@ -21,13 +21,24 @@ source venv/bin/activate
 
 # Install/update dependencies
 echo "📥 Installing dependencies..."
-pip install -r requirements.txt
+./venv/bin/pip install -r requirements.txt
 
 # Check if .env file exists
 if [ ! -f ".env" ]; then
     echo "⚙️  Creating .env file from template..."
     cp .env.example .env
     echo "✅ Created .env file. You may want to edit it with your MongoDB connection details."
+fi
+
+# Check if port 8000 is already in use
+echo "🔍 Checking if port 8000 is available..."
+if lsof -i :8000 &> /dev/null; then
+    echo "⚠️  Port 8000 is already in use. Stopping existing processes..."
+    lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+    sleep 2
+    echo "✅ Port 8000 is now available"
+else
+    echo "✅ Port 8000 is available"
 fi
 
 # Check if MongoDB is running (optional)
@@ -49,4 +60,4 @@ echo "📚 API Documentation: http://localhost:8000/docs"
 echo "🛑 Press Ctrl+C to stop the server"
 echo ""
 
-python main.py
+./venv/bin/python3 main.py

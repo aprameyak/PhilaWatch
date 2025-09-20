@@ -10,7 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Incident } from '../data/mockData';
+import { Incident } from '../services/api';
 
 const IncidentDetailsScreen = () => {
   const navigation = useNavigation();

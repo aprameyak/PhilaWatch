@@ -4,8 +4,11 @@ import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
+// Authentication
+import { AuthProvider } from "./src/contexts/AuthContext";
+import ProtectedRoute from "./src/components/ProtectedRoute";
 
 // Screens
 import OnboardingScreen from "./src/screens/OnboardingScreen";
@@ -14,16 +17,13 @@ import SearchScreen from "./src/screens/SearchScreen";
 import ReportScreen from "./src/screens/ReportScreen";
 import SnapShot from "./src/screens/Snapshot";
 import ProfileScreen from "./src/screens/ProfileScreen";
-import FilterScreen from "./src/screens/FilterScreen";
 import IncidentDetailsScreen from "./src/screens/IncidentDetailsScreen";
-
+import LeaderboardScreen from "./src/screens/LeaderboardScreen";
 // Types
 import {
   RootStackParamList,
   MainTabParamList,
-  AppFilters,
 } from "./src/types/navigation";
-import { Incident, mockIncidents } from "./src/data/mockData";
 
 // Icons (you may need to adjust these based on your icon library)
 import { Ionicons } from "@expo/vector-icons";
@@ -45,6 +45,8 @@ function MainTabs() {
             iconName = focused ? "search" : "search-outline";
           } else if (route.name === "Report") {
             iconName = focused ? "add-circle" : "add-circle-outline";
+          } else if (route.name === "Leaderboard") {
+            iconName = focused ? "trophy" : "trophy-outline";
           } else if (route.name === "Profile") {
             iconName = focused ? "person" : "person-outline";
           } else {
@@ -60,6 +62,7 @@ function MainTabs() {
       <Tab.Screen name="Map" component={MapScreen} />
       <Tab.Screen name="Search" component={SearchScreen} />
       <Tab.Screen name="Report" component={ReportScreen} />
+      <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
@@ -67,20 +70,6 @@ function MainTabs() {
 
 export default function App() {
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
-  const [userReports, setUserReports] = useState<Incident[]>([]);
-  const [currentFilters, setCurrentFilters] = useState<AppFilters>({
-    timeRange: "7d",
-    crimeTypes: [],
-    timeOfDay: [],
-    dataSources: {
-      official: true,
-      community: true,
-    },
-    heatmapIntensity: [50],
-    heatmapRadius: [30],
-    showHeatmap: true,
-    searchLocation: "",
-  });
 
   useEffect(() => {
     AsyncStorage.getItem("hasLaunched").then((value) => {
@@ -93,36 +82,6 @@ export default function App() {
     });
   }, []);
 
-  const handleReportSubmit = (report: any) => {
-    const newReport: Incident = {
-      ...report,
-      id: Date.now(),
-      time: new Date().toISOString(),
-      source: "community" as const,
-      reportedBy: "You (Anonymous)",
-      status: "open",
-      lat: 39.9526 + (Math.random() - 0.5) * 0.01,
-      lon: -75.1652 + (Math.random() - 0.5) * 0.01,
-      distance: Math.random() * 2,
-      neighborhood: "Center City",
-      address: report.location || "Current Location",
-      category:
-        report.type === "trash"
-          ? "quality-of-life"
-          : report.type === "light"
-          ? "quality-of-life"
-          : report.type === "vandalism"
-          ? "vandalism"
-          : "property",
-    };
-
-    setUserReports((prev) => [...prev, newReport]);
-    Alert.alert("Success", "Your report has been submitted successfully!");
-  };
-
-  const handleApplyFilters = (filters: AppFilters) => {
-    setCurrentFilters(filters);
-  };
 
   if (isFirstLaunch === null) {
     return null; // Loading state
@@ -130,21 +89,29 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <StatusBar style="auto" />
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {isFirstLaunch ? (
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-          ) : null}
-          <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen
-            name="IncidentDetails"
-            component={IncidentDetailsScreen}
-            options={{ headerShown: true, title: "Incident Details" }}
-          />
-          <Stack.Screen name="SnapShot" component={SnapShot} />
-        </Stack.Navigator>
-      </NavigationContainer>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="auto" />
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            {isFirstLaunch ? (
+              <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+            ) : null}
+            <Stack.Screen name="Main">
+              {() => (
+                <ProtectedRoute>
+                  <MainTabs />
+                </ProtectedRoute>
+              )}
+            </Stack.Screen>
+            <Stack.Screen
+              name="IncidentDetails"
+              component={IncidentDetailsScreen}
+              options={{ headerShown: true, title: "Incident Details" }}
+            />
+            <Stack.Screen name="SnapShot" component={SnapShot} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

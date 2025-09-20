@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,9 @@ import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useRoute } from "@react-navigation/native";
+import { apiService, CreateUserReportRequest } from "../services/api";
+import UserStats from "../components/UserStats";
+import { useAuth } from "../contexts/AuthContext";
 
 interface ReportData {
   type: string;
@@ -67,8 +71,11 @@ const severityLevels = [
 const ReportScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
+  const { user } = useAuth();
 
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showStats, setShowStats] = useState(false);
   const [reportData, setReportData] = useState<ReportData>({
     type: (route.params as any)?.autoType || "", 
     location: "",
@@ -96,17 +103,51 @@ const ReportScreen = () => {
     }
   };
 
-  const handleSubmit = () => {
-    const report = {
-      ...reportData,
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      status: "open",
-    };
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Prepare the report data for the API
+      const reportRequest: CreateUserReportRequest = {
+        type: reportData.type,
+        location: reportData.location,
+        use_current_location: reportData.useCurrentLocation,
+        photos: reportData.photos,
+        description: reportData.description,
+        severity: reportData.severity,
+        anonymous: reportData.anonymous,
+        contact: reportData.contact || undefined,
+        user_id: user?.username, // Add user ID for gamification
+        // Add GPS coordinates if available
+        lat: reportData.useCurrentLocation ? (await getCurrentLocationCoords())?.lat : undefined,
+        lng: reportData.useCurrentLocation ? (await getCurrentLocationCoords())?.lng : undefined,
+      };
 
-    Alert.alert("Success", "Your report has been submitted successfully!", [
-      { text: "OK", onPress: () => navigation.goBack() },
-    ]);
+      // Submit to backend
+      const createdReport = await apiService.createUserReport(reportRequest);
+      
+      console.log('Report submitted successfully:', createdReport);
+      
+      Alert.alert(
+        "Success", 
+        "Your report has been submitted successfully! Report ID: " + createdReport.id.substring(0, 8) + "...", 
+        [
+          { text: "View Stats", onPress: () => setShowStats(true) },
+          { text: "Done", onPress: () => navigation.goBack() },
+        ]
+      );
+    } catch (error) {
+      console.error('Error submitting report:', error);
+      Alert.alert(
+        "Error", 
+        "Failed to submit your report. Please try again later.", 
+        [
+          { text: "OK" },
+        ]
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const canProceed = () => {
@@ -169,6 +210,22 @@ const ReportScreen = () => {
     } catch (error) {
       console.error("Error getting location:", error);
     }
+  };
+
+  const getCurrentLocationCoords = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const location = await Location.getCurrentPositionAsync({});
+        return {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        };
+      }
+    } catch (error) {
+      console.error("Error getting location coordinates:", error);
+    }
+    return null;
   };
 
   const renderStep = () => {
@@ -467,6 +524,14 @@ const ReportScreen = () => {
     }
   };
 
+  if (showStats) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <UserStats userId={userId} onClose={() => setShowStats(false)} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
@@ -506,9 +571,19 @@ const ReportScreen = () => {
             <Ionicons name="arrow-forward" size={20} color="white" />
           </TouchableOpacity>
         ) : (
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Ionicons name="checkmark-circle" size={20} color="white" />
-            <Text style={styles.buttonText}>Submit Report</Text>
+          <TouchableOpacity 
+            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size="small" color="white" />
+            ) : (
+              <Ionicons name="checkmark-circle" size={20} color="white" />
+            )}
+            <Text style={styles.buttonText}>
+              {isSubmitting ? "Submitting..." : "Submit Report"}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -847,6 +922,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+  },
+  submitButtonDisabled: {
+    backgroundColor: "#C7C7CC",
   },
   buttonText: {
     color: "white",

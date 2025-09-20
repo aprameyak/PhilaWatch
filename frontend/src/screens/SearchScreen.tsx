@@ -10,23 +10,50 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import { phillyNeighborhoods, phillyLocations } from '../data/mockData';
+import { useCrime } from '../hooks/useIncidents';
 
 const SearchScreen = () => {
   const navigation = useNavigation();
   const [searchQuery, setSearchQuery] = useState('');
+  const { incidents, loading } = useCrime();
 
   const handleBack = () => {
     navigation.goBack();
   };
 
-  const filteredNeighborhoods = phillyNeighborhoods.filter(neighborhood =>
+  // Extract unique neighborhoods from real crime data
+  const neighborhoods = React.useMemo(() => {
+    const uniqueNeighborhoods = new Set<string>();
+    incidents.forEach(incident => {
+      if (incident.location_block) {
+        // Extract neighborhood from location_block (e.g., "100 BLOCK N 2ND ST" -> "N 2ND ST")
+        const parts = incident.location_block.split(' ');
+        if (parts.length > 2) {
+          const neighborhood = parts.slice(2).join(' ');
+          uniqueNeighborhoods.add(neighborhood);
+        }
+      }
+    });
+    return Array.from(uniqueNeighborhoods).sort((a, b) => a.localeCompare(b));
+  }, [incidents]);
+
+  // Extract unique locations from real crime data
+  const locations = React.useMemo(() => {
+    const uniqueLocations = new Set<string>();
+    incidents.forEach(incident => {
+      if (incident.location_block) {
+        uniqueLocations.add(incident.location_block);
+      }
+    });
+    return Array.from(uniqueLocations).sort((a, b) => a.localeCompare(b));
+  }, [incidents]);
+
+  const filteredNeighborhoods = neighborhoods.filter(neighborhood =>
     neighborhood.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const filteredLocations = phillyLocations.filter(location =>
-    location.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    location.address.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredLocations = locations.filter(location =>
+    location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -52,29 +79,35 @@ const SearchScreen = () => {
         </View>
       </View>
 
-      <FlatList
-        data={[...filteredNeighborhoods.map(n => ({ type: 'neighborhood', name: n })), 
-               ...filteredLocations.map(l => ({ type: 'location', ...l }))]}
-        keyExtractor={(item, index) => `${item.type}-${index}`}
-        renderItem={({ item }) => (
-          <TouchableOpacity style={styles.searchResult}>
-            <Ionicons 
-              name={item.type === 'neighborhood' ? 'location' : 'business'} 
-              size={20} 
-              color="#8E8E93" 
-            />
-            <View style={styles.resultContent}>
-              <Text style={styles.resultTitle}>
-                {item.type === 'neighborhood' ? item.name : item.name}
-              </Text>
-              {item.type === 'location' && (
-                <Text style={styles.resultSubtitle}>{item.address}</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        )}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Loading locations...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={[
+            ...filteredNeighborhoods.map(n => ({ type: 'neighborhood', name: n, address: '' })), 
+            ...filteredLocations.map(l => ({ type: 'location', name: l, address: l }))
+          ]}
+          keyExtractor={(item, index) => `${item.type}-${index}`}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={styles.searchResult}>
+              <Ionicons 
+                name={item.type === 'neighborhood' ? 'location' : 'business'} 
+                size={20} 
+                color="#8E8E93" 
+              />
+              <View style={styles.resultContent}>
+                <Text style={styles.resultTitle}>{item.name}</Text>
+                {item.type === 'location' && Boolean(item.address) && (
+                  <Text style={styles.resultSubtitle}>{item.address}</Text>
+                )}
+              </View>
+            </TouchableOpacity>
+          )}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -148,6 +181,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#8E8E93',
     marginTop: 2,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#8E8E93',
   },
 });
 

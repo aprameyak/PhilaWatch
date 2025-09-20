@@ -1,5 +1,5 @@
 import { NavigatorScreenParams } from "@react-navigation/native";
-import { Incident } from "../data/mockData";
+import { Incident } from "../services/api";
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
@@ -14,6 +14,7 @@ export type MainTabParamList = {
   Search: undefined;
   Report: { autoType?: string }; 
   Profile: undefined;
+  Leaderboard: undefined;
   Filter: {
     currentFilters?: AppFilters;
   };
