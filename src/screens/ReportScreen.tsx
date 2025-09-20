@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,12 +8,13 @@ import {
   ScrollView,
   Alert,
   Image,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import * as ImagePicker from "expo-image-picker";
+import * as Location from "expo-location";
+import { useRoute } from "@react-navigation/native";
 
 interface ReportData {
   type: string;
@@ -27,30 +28,56 @@ interface ReportData {
 }
 
 const reportTypes = [
-  { id: 'trash', icon: 'trash', label: 'Trash Pile', description: 'Illegal dumping or excessive litter' },
-  { id: 'light', icon: 'bulb', label: 'Broken Streetlight', description: 'Non-functioning street lighting' },
-  { id: 'vandalism', icon: 'warning', label: 'Vandalism', description: 'Property damage or graffiti' },
-  { id: 'suspicious', icon: 'eye', label: 'Suspicious Activity', description: 'Concerning behavior or activity' },
+  {
+    id: "trash",
+    icon: "trash",
+    label: "Trash Pile",
+    description: "Illegal dumping or excessive litter",
+  },
+  {
+    id: "light",
+    icon: "bulb",
+    label: "Broken Streetlight",
+    description: "Non-functioning street lighting",
+  },
+  {
+    id: "vandalism",
+    icon: "warning",
+    label: "Vandalism",
+    description: "Property damage or graffiti",
+  },
+  {
+    id: "suspicious",
+    icon: "eye",
+    label: "Suspicious Activity",
+    description: "Concerning behavior or activity",
+  },
 ];
 
 const severityLevels = [
-  { id: 'low', label: 'Low', description: 'Minor issue, not urgent' },
-  { id: 'medium', label: 'Medium', description: 'Moderate concern' },
-  { id: 'high', label: 'High', description: 'Serious issue requiring attention' },
+  { id: "low", label: "Low", description: "Minor issue, not urgent" },
+  { id: "medium", label: "Medium", description: "Moderate concern" },
+  {
+    id: "high",
+    label: "High",
+    description: "Serious issue requiring attention",
+  },
 ];
 
 const ReportScreen = () => {
+  const route = useRoute();
   const navigation = useNavigation();
+
   const [step, setStep] = useState(1);
   const [reportData, setReportData] = useState<ReportData>({
-    type: '',
-    location: '',
+    type: (route.params as any)?.autoType || "", 
+    location: "",
     useCurrentLocation: true,
     photos: [],
-    description: '',
-    severity: 'medium',
+    description: "",
+    severity: "medium",
     anonymous: true,
-    contact: ''
+    contact: "",
   });
 
   const progress = (step / 4) * 100;
@@ -74,28 +101,36 @@ const ReportScreen = () => {
       ...reportData,
       id: Date.now(),
       timestamp: new Date().toISOString(),
-      status: 'open'
+      status: "open",
     };
-    
-    Alert.alert('Success', 'Your report has been submitted successfully!', [
-      { text: 'OK', onPress: () => navigation.goBack() }
+
+    Alert.alert("Success", "Your report has been submitted successfully!", [
+      { text: "OK", onPress: () => navigation.goBack() },
     ]);
   };
 
   const canProceed = () => {
     switch (step) {
-      case 1: return reportData.type !== '';
-      case 2: return reportData.location !== '' || reportData.useCurrentLocation;
-      case 3: return reportData.description.trim() !== '';
-      case 4: return true;
-      default: return false;
+      case 1:
+        return reportData.type !== "";
+      case 2:
+        return reportData.location !== "" || reportData.useCurrentLocation;
+      case 3:
+        return reportData.description.trim() !== "";
+      case 4:
+        return true;
+      default:
+        return false;
     }
   };
 
   const takePhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
-      Alert.alert('Permission Required', 'Camera permission is required to take photos.');
+      Alert.alert(
+        "Permission Required",
+        "Camera permission is required to take photos."
+      );
       return;
     }
 
@@ -107,9 +142,9 @@ const ReportScreen = () => {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setReportData(prev => ({
+      setReportData((prev) => ({
         ...prev,
-        photos: [...prev.photos, result.assets[0].uri]
+        photos: [...prev.photos, result.assets[0].uri],
       }));
     }
   };
@@ -117,20 +152,22 @@ const ReportScreen = () => {
   const getCurrentLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === 'granted') {
+      if (status === "granted") {
         const location = await Location.getCurrentPositionAsync({});
         const address = await Location.reverseGeocodeAsync({
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         });
-        
+
         if (address[0]) {
-          const formattedAddress = `${address[0].street || ''} ${address[0].name || ''}, ${address[0].city || 'Philadelphia'}`;
-          setReportData(prev => ({ ...prev, location: formattedAddress }));
+          const formattedAddress = `${address[0].street || ""} ${
+            address[0].name || ""
+          }, ${address[0].city || "Philadelphia"}`;
+          setReportData((prev) => ({ ...prev, location: formattedAddress }));
         }
       }
     } catch (error) {
-      console.error('Error getting location:', error);
+      console.error("Error getting location:", error);
     }
   };
 
@@ -140,31 +177,40 @@ const ReportScreen = () => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>What are you reporting?</Text>
-            <Text style={styles.stepSubtitle}>Select the type of issue you want to report to Law Enforcement or the Department of Public Works at Philadelphia. </Text>
-            
+            <Text style={styles.stepSubtitle}>
+              Select the type of issue you want to report to Law Enforcement or
+              the Department of Public Works at Philadelphia.{" "}
+            </Text>
+
             <View style={styles.optionsContainer}>
               {reportTypes.map((type) => (
                 <TouchableOpacity
                   key={type.id}
                   style={[
                     styles.optionCard,
-                    reportData.type === type.id && styles.selectedOption
+                    reportData.type === type.id && styles.selectedOption,
                   ]}
-                  onPress={() => setReportData({ ...reportData, type: type.id })}
+                  onPress={() =>
+                    setReportData({ ...reportData, type: type.id })
+                  }
                 >
-                  <View style={[
-                    styles.optionIcon,
-                    reportData.type === type.id && styles.selectedOptionIcon
-                  ]}>
-                    <Ionicons 
-                      name={type.icon as any} 
-                      size={24} 
-                      color={reportData.type === type.id ? 'white' : '#007AFF'} 
+                  <View
+                    style={[
+                      styles.optionIcon,
+                      reportData.type === type.id && styles.selectedOptionIcon,
+                    ]}
+                  >
+                    <Ionicons
+                      name={type.icon as any}
+                      size={24}
+                      color={reportData.type === type.id ? "white" : "#007AFF"}
                     />
                   </View>
                   <View style={styles.optionContent}>
                     <Text style={styles.optionTitle}>{type.label}</Text>
-                    <Text style={styles.optionDescription}>{type.description}</Text>
+                    <Text style={styles.optionDescription}>
+                      {type.description}
+                    </Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -176,13 +222,16 @@ const ReportScreen = () => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>Where is this happening?</Text>
-            <Text style={styles.stepSubtitle}>Set the location for your report</Text>
-            
+            <Text style={styles.stepSubtitle}>
+              Set the location for your report
+            </Text>
+
             <View style={styles.locationOptions}>
               <TouchableOpacity
                 style={[
                   styles.locationOption,
-                  reportData.useCurrentLocation && styles.selectedLocationOption
+                  reportData.useCurrentLocation &&
+                    styles.selectedLocationOption,
                 ]}
                 onPress={() => {
                   setReportData({ ...reportData, useCurrentLocation: true });
@@ -190,18 +239,25 @@ const ReportScreen = () => {
                 }}
               >
                 <Ionicons name="location" size={20} color="#007AFF" />
-                <Text style={styles.locationOptionText}>Use current location</Text>
+                <Text style={styles.locationOptionText}>
+                  Use current location
+                </Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[
                   styles.locationOption,
-                  !reportData.useCurrentLocation && styles.selectedLocationOption
+                  !reportData.useCurrentLocation &&
+                    styles.selectedLocationOption,
                 ]}
-                onPress={() => setReportData({ ...reportData, useCurrentLocation: false })}
+                onPress={() =>
+                  setReportData({ ...reportData, useCurrentLocation: false })
+                }
               >
                 <Ionicons name="create" size={20} color="#007AFF" />
-                <Text style={styles.locationOptionText}>Enter address manually</Text>
+                <Text style={styles.locationOptionText}>
+                  Enter address manually
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -210,7 +266,9 @@ const ReportScreen = () => {
                 <TextInput
                   placeholder="Enter address or intersection"
                   value={reportData.location}
-                  onChangeText={(text) => setReportData({ ...reportData, location: text })}
+                  onChangeText={(text) =>
+                    setReportData({ ...reportData, location: text })
+                  }
                   style={styles.textInput}
                 />
               </View>
@@ -219,7 +277,9 @@ const ReportScreen = () => {
             {reportData.useCurrentLocation && reportData.location && (
               <View style={styles.locationConfirm}>
                 <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                <Text style={styles.locationConfirmText}>Location: {reportData.location}</Text>
+                <Text style={styles.locationConfirmText}>
+                  Location: {reportData.location}
+                </Text>
               </View>
             )}
           </View>
@@ -227,29 +287,39 @@ const ReportScreen = () => {
 
       case 3:
         return (
-          <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.stepContainer}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.stepTitle}>Add details</Text>
-            <Text style={styles.stepSubtitle}>Help others understand the issue</Text>
-            
+            <Text style={styles.stepSubtitle}>
+              Help others understand the issue
+            </Text>
+
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Photos (optional)</Text>
               <View style={styles.photosContainer}>
                 {reportData.photos.map((photo, index) => (
                   <View key={index} style={styles.photoContainer}>
                     <Image source={{ uri: photo }} style={styles.photo} />
-                    <TouchableOpacity 
+                    <TouchableOpacity
                       style={styles.removePhoto}
-                      onPress={() => setReportData(prev => ({
-                        ...prev,
-                        photos: prev.photos.filter((_, i) => i !== index)
-                      }))}
+                      onPress={() =>
+                        setReportData((prev) => ({
+                          ...prev,
+                          photos: prev.photos.filter((_, i) => i !== index),
+                        }))
+                      }
                     >
                       <Ionicons name="close" size={16} color="white" />
                     </TouchableOpacity>
                   </View>
                 ))}
                 {reportData.photos.length < 3 && (
-                  <TouchableOpacity style={styles.addPhotoButton} onPress={takePhoto}>
+                  <TouchableOpacity
+                    style={styles.addPhotoButton}
+                    onPress={takePhoto}
+                  >
                     <Ionicons name="camera" size={24} color="#007AFF" />
                     <Text style={styles.addPhotoText}>Add Photo</Text>
                   </TouchableOpacity>
@@ -262,7 +332,9 @@ const ReportScreen = () => {
               <TextInput
                 placeholder="Describe the issue in detail..."
                 value={reportData.description}
-                onChangeText={(text) => setReportData({ ...reportData, description: text })}
+                onChangeText={(text) =>
+                  setReportData({ ...reportData, description: text })
+                }
                 style={styles.textArea}
                 multiline
                 numberOfLines={4}
@@ -277,20 +349,29 @@ const ReportScreen = () => {
                     key={level.id}
                     style={[
                       styles.severityOption,
-                      reportData.severity === level.id && styles.selectedSeverity
+                      reportData.severity === level.id &&
+                        styles.selectedSeverity,
                     ]}
-                    onPress={() => setReportData({ ...reportData, severity: level.id })}
+                    onPress={() =>
+                      setReportData({ ...reportData, severity: level.id })
+                    }
                   >
-                    <Text style={[
-                      styles.severityLabel,
-                      reportData.severity === level.id && styles.selectedSeverityText
-                    ]}>
+                    <Text
+                      style={[
+                        styles.severityLabel,
+                        reportData.severity === level.id &&
+                          styles.selectedSeverityText,
+                      ]}
+                    >
                       {level.label}
                     </Text>
-                    <Text style={[
-                      styles.severityDescription,
-                      reportData.severity === level.id && styles.selectedSeverityText
-                    ]}>
+                    <Text
+                      style={[
+                        styles.severityDescription,
+                        reportData.severity === level.id &&
+                          styles.selectedSeverityText,
+                      ]}
+                    >
                       {level.description}
                     </Text>
                   </TouchableOpacity>
@@ -301,45 +382,70 @@ const ReportScreen = () => {
         );
 
       case 4:
-        const selectedType = reportTypes.find(t => t.id === reportData.type);
+        const selectedType = reportTypes.find((t) => t.id === reportData.type);
         return (
-          <ScrollView style={styles.stepContainer} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.stepContainer}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.stepTitle}>Review your report</Text>
-            <Text style={styles.stepSubtitle}>Make sure everything looks correct</Text>
-            
+            <Text style={styles.stepSubtitle}>
+              Make sure everything looks correct
+            </Text>
+
             <View style={styles.reviewCard}>
               <View style={styles.reviewHeader}>
-                <Ionicons name={selectedType?.icon as any} size={24} color="#007AFF" />
+                <Ionicons
+                  name={selectedType?.icon as any}
+                  size={24}
+                  color="#007AFF"
+                />
                 <Text style={styles.reviewTitle}>{selectedType?.label}</Text>
-                <View style={[
-                  styles.severityBadge,
-                  { backgroundColor: reportData.severity === 'high' ? '#FF3B30' : 
-                    reportData.severity === 'medium' ? '#FF9500' : '#34C759' }
-                ]}>
-                  <Text style={styles.severityBadgeText}>{reportData.severity}</Text>
+                <View
+                  style={[
+                    styles.severityBadge,
+                    {
+                      backgroundColor:
+                        reportData.severity === "high"
+                          ? "#FF3B30"
+                          : reportData.severity === "medium"
+                          ? "#FF9500"
+                          : "#34C759",
+                    },
+                  ]}
+                >
+                  <Text style={styles.severityBadgeText}>
+                    {reportData.severity}
+                  </Text>
                 </View>
               </View>
-              
+
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewLabel}>Location</Text>
                 <Text style={styles.reviewValue}>
-                  {reportData.useCurrentLocation ? 'Current location' : reportData.location}
+                  {reportData.useCurrentLocation
+                    ? "Current location"
+                    : reportData.location}
                 </Text>
               </View>
-              
+
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewLabel}>Description</Text>
                 <Text style={styles.reviewValue}>{reportData.description}</Text>
               </View>
-              
+
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewLabel}>Photos</Text>
-                <Text style={styles.reviewValue}>{reportData.photos.length} photo(s)</Text>
+                <Text style={styles.reviewValue}>
+                  {reportData.photos.length} photo(s)
+                </Text>
               </View>
-              
+
               <View style={styles.reviewSection}>
                 <Text style={styles.reviewLabel}>Anonymous report</Text>
-                <Text style={styles.reviewValue}>{reportData.anonymous ? 'Yes' : 'No'}</Text>
+                <Text style={styles.reviewValue}>
+                  {reportData.anonymous ? "Yes" : "No"}
+                </Text>
               </View>
             </View>
 
@@ -348,7 +454,8 @@ const ReportScreen = () => {
               <View style={styles.warningContent}>
                 <Text style={styles.warningTitle}>Safety Reminder</Text>
                 <Text style={styles.warningText}>
-                  If this is an immediate emergency, call 911. This report will be visible to the community and may take time to address.
+                  If this is an immediate emergency, call 911. This report will
+                  be visible to the community and may take time to address.
                 </Text>
               </View>
             </View>
@@ -371,7 +478,10 @@ const ReportScreen = () => {
           <Text style={styles.headerTitle}>Report Issue</Text>
           <Text style={styles.headerSubtitle}>Step {step} of 4</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.closeButton}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.closeButton}
+        >
           <Ionicons name="close" size={24} color="#8E8E93" />
         </TouchableOpacity>
       </View>
@@ -382,9 +492,7 @@ const ReportScreen = () => {
       </View>
 
       {/* Content */}
-      <View style={styles.content}>
-        {renderStep()}
-      </View>
+      <View style={styles.content}>{renderStep()}</View>
 
       {/* Footer */}
       <View style={styles.footer}>
@@ -411,49 +519,49 @@ const ReportScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: "#F2F2F7",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E7',
+    borderBottomColor: "#E5E5E7",
   },
   backButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerCenter: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    fontWeight: "600",
+    color: "#1C1C1E",
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   closeButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   progressContainer: {
     height: 4,
-    backgroundColor: '#E5E5E7',
+    backgroundColor: "#E5E5E7",
   },
   progressBar: {
     height: 4,
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
   },
   content: {
     flex: 1,
@@ -464,103 +572,103 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#1C1C1E',
+    fontWeight: "700",
+    color: "#1C1C1E",
     marginBottom: 8,
-    textAlign: 'center',
+    textAlign: "center",
   },
   stepSubtitle: {
     fontSize: 10,
-    color: '#8E8E93',
-    textAlign: 'center',
+    color: "#8E8E93",
+    textAlign: "center",
     marginBottom: 32,
   },
   optionsContainer: {
     gap: 16,
   },
   optionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   selectedOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    borderColor: "#007AFF",
+    backgroundColor: "#F0F8FF",
   },
   optionIcon: {
     width: 48,
     height: 48,
-    backgroundColor: '#F0F8FF',
+    backgroundColor: "#F0F8FF",
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 16,
   },
   selectedOptionIcon: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
   },
   optionContent: {
     flex: 1,
   },
   optionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    fontWeight: "600",
+    color: "#1C1C1E",
     marginBottom: 4,
   },
   optionDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   locationOptions: {
     gap: 16,
     marginBottom: 24,
   },
   locationOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   selectedLocationOption: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    borderColor: "#007AFF",
+    backgroundColor: "#F0F8FF",
   },
   locationOptionText: {
     fontSize: 16,
-    color: '#1C1C1E',
+    color: "#1C1C1E",
     marginLeft: 12,
   },
   inputContainer: {
     marginTop: 16,
   },
   textInput: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: "#1C1C1E",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
   },
   locationConfirm: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F0FFF0',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FFF0",
     borderRadius: 12,
     padding: 16,
     marginTop: 16,
   },
   locationConfirmText: {
     fontSize: 14,
-    color: '#34C759',
+    color: "#34C759",
     marginLeft: 8,
     flex: 1,
   },
@@ -569,17 +677,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    fontWeight: "600",
+    color: "#1C1C1E",
     marginBottom: 12,
   },
   photosContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   photoContainer: {
-    position: 'relative',
+    position: "relative",
   },
   photo: {
     width: 80,
@@ -587,85 +695,85 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   removePhoto: {
-    position: 'absolute',
+    position: "absolute",
     top: -6,
     right: -6,
-    backgroundColor: '#FF3B30',
+    backgroundColor: "#FF3B30",
     borderRadius: 12,
     width: 24,
     height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   addPhotoButton: {
     width: 80,
     height: 80,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 8,
     borderWidth: 2,
-    borderColor: '#E5E5E7',
-    borderStyle: 'dashed',
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: "#E5E5E7",
+    borderStyle: "dashed",
+    alignItems: "center",
+    justifyContent: "center",
   },
   addPhotoText: {
     fontSize: 12,
-    color: '#007AFF',
+    color: "#007AFF",
     marginTop: 4,
   },
   textArea: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     fontSize: 16,
-    color: '#1C1C1E',
+    color: "#1C1C1E",
     borderWidth: 1,
-    borderColor: '#E5E5E7',
+    borderColor: "#E5E5E7",
     minHeight: 100,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   severityContainer: {
     gap: 12,
   },
   severityOption: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 16,
     borderWidth: 2,
-    borderColor: 'transparent',
+    borderColor: "transparent",
   },
   selectedSeverity: {
-    borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    borderColor: "#007AFF",
+    backgroundColor: "#F0F8FF",
   },
   severityLabel: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    fontWeight: "600",
+    color: "#1C1C1E",
     marginBottom: 4,
   },
   severityDescription: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
   },
   selectedSeverityText: {
-    color: '#007AFF',
+    color: "#007AFF",
   },
   reviewCard: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderRadius: 12,
     padding: 20,
     marginBottom: 20,
   },
   reviewHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
   },
   reviewTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#1C1C1E',
+    fontWeight: "600",
+    color: "#1C1C1E",
     flex: 1,
     marginLeft: 12,
   },
@@ -676,29 +784,29 @@ const styles = StyleSheet.create({
   },
   severityBadgeText: {
     fontSize: 12,
-    fontWeight: '600',
-    color: 'white',
-    textTransform: 'capitalize',
+    fontWeight: "600",
+    color: "white",
+    textTransform: "capitalize",
   },
   reviewSection: {
     marginBottom: 16,
   },
   reviewLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#8E8E93',
+    fontWeight: "600",
+    color: "#8E8E93",
     marginBottom: 4,
   },
   reviewValue: {
     fontSize: 16,
-    color: '#1C1C1E',
+    color: "#1C1C1E",
   },
   warningCard: {
-    backgroundColor: '#FFF8E1',
+    backgroundColor: "#FFF8E1",
     borderRadius: 12,
     padding: 16,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    alignItems: "flex-start",
   },
   warningContent: {
     flex: 1,
@@ -706,44 +814,44 @@ const styles = StyleSheet.create({
   },
   warningTitle: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#FF9500',
+    fontWeight: "600",
+    color: "#FF9500",
     marginBottom: 4,
   },
   warningText: {
     fontSize: 14,
-    color: '#8E8E93',
+    color: "#8E8E93",
     lineHeight: 20,
   },
   footer: {
     padding: 20,
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopWidth: 1,
-    borderTopColor: '#E5E5E7',
+    borderTopColor: "#E5E5E7",
   },
   button: {
-    backgroundColor: '#007AFF',
+    backgroundColor: "#007AFF",
     borderRadius: 12,
     paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonDisabled: {
-    backgroundColor: '#C7C7CC',
+    backgroundColor: "#C7C7CC",
   },
   submitButton: {
-    backgroundColor: '#FF9500',
+    backgroundColor: "#FF9500",
     borderRadius: 12,
     paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     marginHorizontal: 8,
   },
 });

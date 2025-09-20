@@ -1,16 +1,18 @@
-import { NavigatorScreenParams } from '@react-navigation/native';
-import { Incident } from '../data/mockData';
+import { NavigatorScreenParams } from "@react-navigation/native";
+import { Incident } from "../data/mockData";
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
   IncidentDetails: { incident: Incident };
+  SnapShot: undefined;
   Onboarding: undefined;
+  Report: { autoType?: string };
 };
 
 export type MainTabParamList = {
   Map: undefined;
   Search: undefined;
-  Report: undefined;
+  Report: { autoType?: string }; 
   Profile: undefined;
   Filter: {
     currentFilters?: AppFilters;
