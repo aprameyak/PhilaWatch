@@ -15,163 +15,12 @@ import { useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 
 import * as Location from "expo-location";
+import { useCrime } from "../hooks/useIncidents";
+import { apiService } from "../services/api";
 
 const { width, height } = Dimensions.get("window");
 
-// Hardcoded Philadelphia crime data
-const phillyCrimeData = [
-  {
-    id: 1,
-    latitude: 39.9526,
-    longitude: -75.1652,
-    crime_type: "robbery",
-    severity: 3,
-    date: "2025-01-15",
-    address: "1500 Market St",
-    neighborhood: "Center City",
-  },
-  {
-    id: 2,
-    latitude: 39.9794,
-    longitude: -75.1652,
-    crime_type: "burglary",
-    severity: 2,
-    date: "2025-01-14",
-    address: "2000 N Broad St",
-    neighborhood: "North Philadelphia",
-  },
-  {
-    id: 3,
-    latitude: 39.9311,
-    longitude: -75.1719,
-    crime_type: "assault",
-    severity: 4,
-    date: "2025-01-13",
-    address: "1200 S Broad St",
-    neighborhood: "South Philadelphia",
-  },
-  {
-    id: 4,
-    latitude: 39.9526,
-    longitude: -75.2063,
-    crime_type: "theft",
-    severity: 1,
-    date: "2025-01-12",
-    address: "4000 Chestnut St",
-    neighborhood: "West Philadelphia",
-  },
-  {
-    id: 5,
-    latitude: 40.0379,
-    longitude: -75.0782,
-    crime_type: "vandalism",
-    severity: 1,
-    date: "2025-01-11",
-    address: "8000 Roosevelt Blvd",
-    neighborhood: "Northeast",
-  },
-  {
-    id: 6,
-    latitude: 39.97,
-    longitude: -75.1351,
-    crime_type: "drug",
-    severity: 2,
-    date: "2025-01-10",
-    address: "1500 Frankford Ave",
-    neighborhood: "Fishtown",
-  },
-  {
-    id: 7,
-    latitude: 39.9526,
-    longitude: -75.1441,
-    crime_type: "robbery",
-    severity: 4,
-    date: "2025-01-09",
-    address: "400 Market St",
-    neighborhood: "Old City",
-  },
-  {
-    id: 8,
-    latitude: 39.968,
-    longitude: -75.158,
-    crime_type: "assault",
-    severity: 5,
-    date: "2025-01-08",
-    address: "1800 N Broad St",
-    neighborhood: "Temple Area",
-  },
-  {
-    id: 9,
-    latitude: 39.944,
-    longitude: -75.19,
-    crime_type: "burglary",
-    severity: 2,
-    date: "2025-01-07",
-    address: "2500 Girard Ave",
-    neighborhood: "Brewerytown",
-  },
-  {
-    id: 10,
-    latitude: 39.9629,
-    longitude: -75.1399,
-    crime_type: "theft",
-    severity: 1,
-    date: "2025-01-06",
-    address: "1000 Spring Garden",
-    neighborhood: "Northern Liberties",
-  },
-  // Add more sample data to make heatmap visible
-  {
-    id: 11,
-    latitude: 39.952,
-    longitude: -75.165,
-    crime_type: "robbery",
-    severity: 3,
-    date: "2025-01-05",
-    address: "1400 Market St",
-    neighborhood: "Center City",
-  },
-  {
-    id: 12,
-    latitude: 39.953,
-    longitude: -75.1655,
-    crime_type: "assault",
-    severity: 4,
-    date: "2025-01-04",
-    address: "1600 Market St",
-    neighborhood: "Center City",
-  },
-  {
-    id: 13,
-    latitude: 39.979,
-    longitude: -75.165,
-    crime_type: "burglary",
-    severity: 2,
-    date: "2025-01-03",
-    address: "2100 N Broad St",
-    neighborhood: "North Philadelphia",
-  },
-  {
-    id: 14,
-    latitude: 39.98,
-    longitude: -75.1655,
-    crime_type: "theft",
-    severity: 3,
-    date: "2025-01-02",
-    address: "2200 N Broad St",
-    neighborhood: "North Philadelphia",
-  },
-  {
-    id: 15,
-    latitude: 39.9315,
-    longitude: -75.172,
-    crime_type: "vandalism",
-    severity: 1,
-    date: "2025-01-01",
-    address: "1300 S Broad St",
-    neighborhood: "South Philadelphia",
-  },
-];
+// Crime data will now be fetched from the API
 
 const MapScreen = () => {
   const navigation = useNavigation();
@@ -179,6 +28,8 @@ const MapScreen = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
+  const [crimeData, setCrimeData] = useState([]);
+  const { incidents, loading: incidentsLoading, error: incidentsError, refetch } = useCrime();
   const [currentFilters] = useState({
     timeRange: "7d",
     crimeTypes: [],
@@ -188,6 +39,14 @@ const MapScreen = () => {
   useEffect(() => {
     getCurrentLocation();
   }, []);
+
+  // Update crime data when incidents are loaded
+  useEffect(() => {
+    if (incidents && incidents.length > 0) {
+      const mapData = apiService.convertToMapData(incidents);
+      setCrimeData(mapData);
+    }
+  }, [incidents]);
 
   const getCurrentLocation = async () => {
     try {
@@ -223,7 +82,7 @@ const MapScreen = () => {
 
   // Single HTML file with everything embedded
   const createMapHTML = () => {
-    const crimeDataJson = JSON.stringify(phillyCrimeData);
+    const crimeDataJson = JSON.stringify(crimeData);
     const userLocationJson = userLocation
       ? JSON.stringify(userLocation)
       : "null";
@@ -454,7 +313,7 @@ const MapScreen = () => {
         </View>
         <View style={styles.filterChip}>
           <Text style={styles.filterChipText}>
-            {phillyCrimeData.length} incidents
+            {incidentsLoading ? 'Loading...' : `${crimeData.length} incidents`}
           </Text>
         </View>
         <TouchableOpacity
@@ -471,12 +330,17 @@ const MapScreen = () => {
 
       {/* Map WebView */}
       <View style={styles.mapContainer}>
-        {isLoading && (
+        {(isLoading || incidentsLoading) && (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#007AFF" />
             <Text style={styles.loadingText}>
-              Loading Philadelphia Crime Map...
+              {incidentsLoading ? 'Loading incident data...' : 'Loading Philadelphia Crime Map...'}
             </Text>
+            {incidentsError && (
+              <Text style={styles.errorText}>
+                Error: {incidentsError}
+              </Text>
+            )}
           </View>
         )}
         <WebView
@@ -624,6 +488,12 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: "#8E8E93",
+  },
+  errorText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: "#FF3B30",
+    textAlign: "center",
   },
   fab: {
     position: "absolute",
