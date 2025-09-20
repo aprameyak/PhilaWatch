@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   stepSubtitle: {
-    fontSize: 16,
+    fontSize: 10,
     color: '#8E8E93',
     textAlign: 'center',
     marginBottom: 32,
