@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,7 +19,7 @@ import { useRoute } from "@react-navigation/native";
 interface ReportData {
   type: string;
   location: string;
-  useCurrentLocation: boolean;
+  coordinates: { latitude: number; longitude: number } | null;
   photos: string[];
   description: string;
   severity: string;
@@ -64,64 +64,156 @@ const severityLevels = [
   },
 ];
 
+// Replace with your actual Google Maps API key
+const GOOGLE_MAPS_API_KEY = "AIzaSyD76ShbpMOEu02aheDb3n2gATANFZc1hgM";
+
 const ReportScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
 
-  const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [editingField, setEditingField] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportData>({
     type: (route.params as any)?.autoType || "",
-    location: "",
-    useCurrentLocation: false,
-    photos: [],
-    description: "",
-    severity: "",
+    location: (route.params as any)?.snapshotData?.location || "",
+    coordinates: (route.params as any)?.snapshotData?.coordinates || null,
+    photos: (route.params as any)?.snapshotData?.photos || [],
+    description: (route.params as any)?.snapshotData?.description || "",
+    severity: (route.params as any)?.snapshotData?.severity || "medium",
     anonymous: true,
     contact: "",
   });
 
-  const progress = (step / 4) * 100;
+  // Auto-fill data on component mount
+  useEffect(() => {
+    autofillReportData();
+  }, []);
 
-  const handleNext = () => {
-    if (step < 4) {
-      setStep(step + 1);
+  const autofillReportData = async () => {
+    setIsLoading(true);
+    
+    try {
+      // Auto-fill type if not provided
+      let autoType = reportData.type;
+      if (!autoType) {
+        // Default to most common report type or use AI detection logic
+        autoType = "trash";
+      }
+
+      // Auto-fill location using GPS + Google Maps
+      const locationData = await getLocationWithAddress();
+      
+      // Auto-fill severity based on type (you can customize this logic)
+      const autoSeverity = getAutoSeverity(autoType);
+
+      setReportData(prev => ({
+        ...prev,
+        type: autoType,
+        location: locationData.address,
+        coordinates: locationData.coordinates,
+        severity: autoSeverity,
+        // description remains optional and empty
+      }));
+
+    } catch (error) {
+      console.error("Error auto-filling report data:", error);
+      Alert.alert("Error", "Unable to auto-fill some fields. Please fill them manually.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
-    } else {
-      navigation.goBack();
+  const getLocationWithAddress = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        throw new Error("Location permission denied");
+      }
+
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const { latitude, longitude } = location.coords;
+      
+      // Use Google Maps Geocoding API for more accurate address
+      const address = await getAddressFromGoogleMaps(latitude, longitude);
+      
+      return {
+        address,
+        coordinates: { latitude, longitude }
+      };
+    } catch (error) {
+      console.error("Location error:", error);
+      // Fallback to Expo's reverse geocoding
+      return await getFallbackLocation();
     }
   };
 
-  const handleSubmit = () => {
-    const report = {
-      ...reportData,
-      id: Date.now(),
-      timestamp: new Date().toISOString(),
-      status: "open",
-    };
-
-    Alert.alert("Success", "Your report has been submitted successfully!", [
-      { text: "OK", onPress: () => navigation.goBack() },
-    ]);
+  const getAddressFromGoogleMaps = async (latitude: number, longitude: number) => {
+    try {
+      const response = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${GOOGLE_MAPS_API_KEY}`
+      );
+      const data = await response.json();
+      
+      if (data.status === "OK" && data.results.length > 0) {
+        return data.results[0].formatted_address;
+      }
+      throw new Error("No address found");
+    } catch (error) {
+      console.error("Google Maps API error:", error);
+      throw error;
+    }
   };
 
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        return reportData.type !== "";
-      case 2:
-        return reportData.location !== "" || reportData.useCurrentLocation;
-      case 3:
-        return reportData.description.trim() !== "";
-      case 4:
-        return true;
+  const getFallbackLocation = async () => {
+    try {
+      const location = await Location.getCurrentPositionAsync({});
+      const address = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (address[0]) {
+        const formattedAddress = `${address[0].street || ""} ${
+          address[0].name || ""
+        }, ${address[0].city || "Philadelphia"}, ${address[0].region || "PA"}`;
+        return {
+          address: formattedAddress,
+          coordinates: {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude
+          }
+        };
+      }
+      throw new Error("Unable to get address");
+    } catch (error) {
+      return {
+        address: "Philadelphia, PA, USA", // Default fallback
+        coordinates: { latitude: 39.9526, longitude: -75.1652 } // Philadelphia coordinates
+      };
+    }
+  };
+
+  const getAutoSeverity = (type: string) => {
+    // Auto-determine severity based on report type
+    switch (type) {
+      case "suspicious":
+        return "high";
+      case "vandalism":
+        return "medium";
+      case "light":
+        return "medium";
+      case "trash":
+        return "low";
       default:
-        return false;
+        return "medium";
     }
+  };
+
+  const handleFieldEdit = (field: string, value: any) => {
+    setReportData(prev => ({ ...prev, [field]: value }));
   };
 
   const takePhoto = async () => {
@@ -149,340 +241,74 @@ const ReportScreen = () => {
     }
   };
 
-  const getCurrentLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({});
-        const address = await Location.reverseGeocodeAsync({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        });
+  const handleSubmit = () => {
+    const report = {
+      ...reportData,
+      id: Date.now(),
+      timestamp: new Date().toISOString(),
+      status: "open",
+    };
 
-        if (address[0]) {
-          const formattedAddress = `${address[0].street || ""} ${
-            address[0].name || ""
-          }, ${address[0].city || "Philadelphia"}`;
-          setReportData((prev) => ({ ...prev, location: formattedAddress }));
-        }
-      }
-    } catch (error) {
-      console.error("Error getting location:", error);
-    }
+    Alert.alert("Success", "Your report has been submitted successfully!", [
+      { text: "OK", onPress: () => navigation.goBack() },
+    ]);
   };
 
-  const renderStep = () => {
-    switch (step) {
-      case 1:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>
-              {(route.params as any)?.autoType
-                ? reportData.type.charAt(0).toString().toUpperCase() +
-                  reportData.type.slice(1) +
-                  " Detected!"
-                : "What is being reported?"}{" "}
-            </Text>
-            <Text style={styles.stepSubtitle}>
-              Select the type of issue you want to report to Law Enforcement or
-              the Department of Public Works at Philadelphia.{" "}
-            </Text>
-
-            <View style={styles.optionsContainer}>
-              {reportTypes.map((type) => (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[
-                    styles.optionCard,
-                    reportData.type === type.id && styles.selectedOption,
-                  ]}
-                  onPress={() =>
-                    setReportData({ ...reportData, type: type.id })
-                  }
-                >
-                  <View
-                    style={[
-                      styles.optionIcon,
-                      reportData.type === type.id && styles.selectedOptionIcon,
-                    ]}
-                  >
-                    <Ionicons
-                      name={type.icon as any}
-                      size={24}
-                      color={reportData.type === type.id ? "white" : "#007AFF"}
-                    />
-                  </View>
-                  <View style={styles.optionContent}>
-                    <Text style={styles.optionTitle}>{type.label}</Text>
-                    <Text style={styles.optionDescription}>
-                      {type.description}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        );
-
-      case 2:
-        return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>Where is this happening?</Text>
-            <Text style={styles.stepSubtitle}>
-              Set the location for your report
-            </Text>
-
-            <View style={styles.locationOptions}>
-              <TouchableOpacity
-                style={[
-                  styles.locationOption,
-                  reportData.useCurrentLocation &&
-                    styles.selectedLocationOption,
-                ]}
-                onPress={() => {
-                  setReportData({ ...reportData, useCurrentLocation: true });
-                  getCurrentLocation();
-                }}
-              >
-                <Ionicons name="location" size={20} color="#007AFF" />
-                <Text style={styles.locationOptionText}>
-                  Use current location
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.locationOption,
-                  !reportData.useCurrentLocation &&
-                    styles.selectedLocationOption,
-                ]}
-                onPress={() =>
-                  setReportData({ ...reportData, useCurrentLocation: false })
-                }
-              >
-                <Ionicons name="create" size={20} color="#007AFF" />
-                <Text style={styles.locationOptionText}>
-                  Enter address manually
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {!reportData.useCurrentLocation && (
-              <View style={styles.inputContainer}>
-                <TextInput
-                  placeholder="Enter address or intersection"
-                  value={reportData.location}
-                  onChangeText={(text) =>
-                    setReportData({ ...reportData, location: text })
-                  }
-                  style={styles.textInput}
-                />
-              </View>
-            )}
-
-            {reportData.useCurrentLocation && reportData.location && (
-              <View style={styles.locationConfirm}>
-                <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-                <Text style={styles.locationConfirmText}>
-                  Location: {reportData.location}
-                </Text>
-              </View>
-            )}
-          </View>
-        );
-
-      case 3:
-        return (
-          <ScrollView
-            style={styles.stepContainer}
-            showsVerticalScrollIndicator={false}
+  const renderEditableField = (
+    label: string,
+    field: keyof ReportData,
+    value: any,
+    renderContent: () => React.ReactNode,
+    renderEdit: () => React.ReactNode
+  ) => {
+    const isEditing = editingField === field;
+    
+    return (
+      <View style={styles.editableField}>
+        <View style={styles.fieldHeader}>
+          <Text style={styles.fieldLabel}>{label}</Text>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => setEditingField(isEditing ? null : field)}
           >
-            <Text style={styles.stepTitle}>Add details</Text>
-            <Text style={styles.stepSubtitle}>
-              Help others understand the issue
+            <Ionicons 
+              name={isEditing ? "checkmark" : "create"} 
+              size={16} 
+              color="#007AFF" 
+            />
+            <Text style={styles.editButtonText}>
+              {isEditing ? "Done" : "Edit"}
             </Text>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Photos (optional)</Text>
-              <View style={styles.photosContainer}>
-                {reportData.photos.map((photo, index) => (
-                  <View key={index} style={styles.photoContainer}>
-                    <Image source={{ uri: photo }} style={styles.photo} />
-                    <TouchableOpacity
-                      style={styles.removePhoto}
-                      onPress={() =>
-                        setReportData((prev) => ({
-                          ...prev,
-                          photos: prev.photos.filter((_, i) => i !== index),
-                        }))
-                      }
-                    >
-                      <Ionicons name="close" size={16} color="white" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-                {reportData.photos.length < 3 && (
-                  <TouchableOpacity
-                    style={styles.addPhotoButton}
-                    onPress={takePhoto}
-                  >
-                    <Ionicons name="camera" size={24} color="#007AFF" />
-                    <Text style={styles.addPhotoText}>Add Photo</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Description *</Text>
-              <TextInput
-                placeholder="Describe the issue in detail..."
-                value={reportData.description}
-                onChangeText={(text) =>
-                  setReportData({ ...reportData, description: text })
-                }
-                style={styles.textArea}
-                multiline
-                numberOfLines={4}
-              />
-            </View>
-
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Severity</Text>
-              <View style={styles.severityContainer}>
-                {severityLevels.map((level) => (
-                  <TouchableOpacity
-                    key={level.id}
-                    style={[
-                      styles.severityOption,
-                      reportData.severity === level.id &&
-                        styles.selectedSeverity,
-                    ]}
-                    onPress={() =>
-                      setReportData({ ...reportData, severity: level.id })
-                    }
-                  >
-                    <Text
-                      style={[
-                        styles.severityLabel,
-                        reportData.severity === level.id &&
-                          styles.selectedSeverityText,
-                      ]}
-                    >
-                      {level.label}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.severityDescription,
-                        reportData.severity === level.id &&
-                          styles.selectedSeverityText,
-                      ]}
-                    >
-                      {level.description}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </ScrollView>
-        );
-
-      case 4:
-        const selectedType = reportTypes.find((t) => t.id === reportData.type);
-        return (
-          <ScrollView
-            style={styles.stepContainer}
-            showsVerticalScrollIndicator={false}
-          >
-            <Text style={styles.stepTitle}>Review your report</Text>
-            <Text style={styles.stepSubtitle}>
-              Make sure everything looks correct
-            </Text>
-
-            <View style={styles.reviewCard}>
-              <View style={styles.reviewHeader}>
-                <Ionicons
-                  name={selectedType?.icon as any}
-                  size={24}
-                  color="#007AFF"
-                />
-                <Text style={styles.reviewTitle}>{selectedType?.label}</Text>
-                <View
-                  style={[
-                    styles.severityBadge,
-                    {
-                      backgroundColor:
-                        reportData.severity === "high"
-                          ? "#FF3B30"
-                          : reportData.severity === "medium"
-                          ? "#FF9500"
-                          : "#34C759",
-                    },
-                  ]}
-                >
-                  <Text style={styles.severityBadgeText}>
-                    {reportData.severity}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewLabel}>Location</Text>
-                <Text style={styles.reviewValue}>
-                  {reportData.useCurrentLocation
-                    ? "Current location"
-                    : reportData.location}
-                </Text>
-              </View>
-
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewLabel}>Description</Text>
-                <Text style={styles.reviewValue}>{reportData.description}</Text>
-              </View>
-
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewLabel}>Photos</Text>
-                <Text style={styles.reviewValue}>
-                  {reportData.photos.length} photo(s)
-                </Text>
-              </View>
-
-              <View style={styles.reviewSection}>
-                <Text style={styles.reviewLabel}>Anonymous report</Text>
-                <Text style={styles.reviewValue}>
-                  {reportData.anonymous ? "Yes" : "No"}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.warningCard}>
-              <Ionicons name="warning" size={20} color="#FF9500" />
-              <View style={styles.warningContent}>
-                <Text style={styles.warningTitle}>Safety Reminder</Text>
-                <Text style={styles.warningText}>
-                  If this is an immediate emergency, call 911. This report will
-                  be visible to the community and may take time to address.
-                </Text>
-              </View>
-            </View>
-          </ScrollView>
-        );
-
-      default:
-        return null;
-    }
+          </TouchableOpacity>
+        </View>
+        
+        {isEditing ? renderEdit() : renderContent()}
+      </View>
+    );
   };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>Auto-filling report details...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const selectedType = reportTypes.find((t) => t.id === reportData.type);
 
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>Report Issue</Text>
-          <Text style={styles.headerSubtitle}>Step {step} of 4</Text>
+          <Text style={styles.headerTitle}>Review Report</Text>
+          <Text style={styles.headerSubtitle}>Edit any field as needed</Text>
         </View>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -492,31 +318,209 @@ const ReportScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Progress Bar */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressBar, { width: `${progress}%` }]} />
-      </View>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.autoFilledBanner}>
+          <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+          <Text style={styles.autoFilledText}>Report auto-filled successfully</Text>
+        </View>
 
-      {/* Content */}
-      <View style={styles.content}>{renderStep()}</View>
+        {/* Report Type */}
+        {renderEditableField(
+          "Report Type",
+          "type",
+          reportData.type,
+          () => (
+            <View style={styles.fieldContent}>
+              <View style={styles.typeDisplay}>
+                <Ionicons name={selectedType?.icon as any} size={24} color="#007AFF" />
+                <Text style={styles.typeText}>{selectedType?.label}</Text>
+              </View>
+            </View>
+          ),
+          () => (
+            <View style={styles.optionsContainer}>
+              {reportTypes.map((type) => (
+                <TouchableOpacity
+                  key={type.id}
+                  style={[
+                    styles.optionCard,
+                    reportData.type === type.id && styles.selectedOption,
+                  ]}
+                  onPress={() => handleFieldEdit("type", type.id)}
+                >
+                  <View style={styles.optionIcon}>
+                    <Ionicons
+                      name={type.icon as any}
+                      size={20}
+                      color={reportData.type === type.id ? "white" : "#007AFF"}
+                    />
+                  </View>
+                  <Text style={styles.optionTitle}>{type.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )
+        )}
+
+        {/* Location */}
+        {renderEditableField(
+          "Location",
+          "location",
+          reportData.location,
+          () => (
+            <View style={styles.fieldContent}>
+              <View style={styles.locationDisplay}>
+                <Ionicons name="location" size={20} color="#34C759" />
+                <Text style={styles.locationText}>{reportData.location}</Text>
+              </View>
+            </View>
+          ),
+          () => (
+            <View style={styles.inputContainer}>
+              <TextInput
+                placeholder="Enter address or intersection"
+                value={reportData.location}
+                onChangeText={(text) => handleFieldEdit("location", text)}
+                style={styles.textInput}
+                autoFocus
+              />
+              <TouchableOpacity
+                style={styles.refreshLocationButton}
+                onPress={async () => {
+                  const locationData = await getLocationWithAddress();
+                  handleFieldEdit("location", locationData.address);
+                  handleFieldEdit("coordinates", locationData.coordinates);
+                }}
+              >
+                <Ionicons name="refresh" size={16} color="#007AFF" />
+                <Text style={styles.refreshLocationText}>Use Current Location</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        )}
+
+        {/* Severity */}
+        {renderEditableField(
+          "Severity",
+          "severity",
+          reportData.severity,
+          () => (
+            <View style={styles.fieldContent}>
+              <View
+                style={[
+                  styles.severityBadge,
+                  {
+                    backgroundColor:
+                      reportData.severity === "high"
+                        ? "#FF3B30"
+                        : reportData.severity === "medium"
+                        ? "#FF9500"
+                        : "#34C759",
+                  },
+                ]}
+              >
+                <Text style={styles.severityBadgeText}>
+                  {reportData.severity.toUpperCase()}
+                </Text>
+              </View>
+            </View>
+          ),
+          () => (
+            <View style={styles.severityContainer}>
+              {severityLevels.map((level) => (
+                <TouchableOpacity
+                  key={level.id}
+                  style={[
+                    styles.severityOption,
+                    reportData.severity === level.id && styles.selectedSeverity,
+                  ]}
+                  onPress={() => handleFieldEdit("severity", level.id)}
+                >
+                  <Text style={styles.severityLabel}>{level.label}</Text>
+                  <Text style={styles.severityDescription}>{level.description}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )
+        )}
+
+        {/* Photos */}
+        <View style={styles.editableField}>
+          <View style={styles.fieldHeader}>
+            <Text style={styles.fieldLabel}>Photos (Optional)</Text>
+            <TouchableOpacity style={styles.editButton} onPress={takePhoto}>
+              <Ionicons name="camera" size={16} color="#007AFF" />
+              <Text style={styles.editButtonText}>Add Photo</Text>
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.photosContainer}>
+            {reportData.photos.map((photo, index) => (
+              <View key={index} style={styles.photoContainer}>
+                <Image source={{ uri: photo }} style={styles.photo} />
+                <TouchableOpacity
+                  style={styles.removePhoto}
+                  onPress={() =>
+                    setReportData((prev) => ({
+                      ...prev,
+                      photos: prev.photos.filter((_, i) => i !== index),
+                    }))
+                  }
+                >
+                  <Ionicons name="close" size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+            ))}
+            {reportData.photos.length === 0 && (
+              <Text style={styles.noPhotosText}>No photos added</Text>
+            )}
+          </View>
+        </View>
+
+        {/* Description */}
+        {renderEditableField(
+          "Description (Optional)",
+          "description",
+          reportData.description,
+          () => (
+            <View style={styles.fieldContent}>
+              <Text style={reportData.description ? styles.descriptionText : styles.descriptionPlaceholder}>
+                {reportData.description || "No description provided"}
+              </Text>
+            </View>
+          ),
+          () => (
+            <TextInput
+              placeholder="Describe the issue in detail..."
+              value={reportData.description}
+              onChangeText={(text) => handleFieldEdit("description", text)}
+              style={styles.textArea}
+              multiline
+              numberOfLines={4}
+              autoFocus
+            />
+          )
+        )}
+
+        {/* Warning Card */}
+        <View style={styles.warningCard}>
+          <Ionicons name="warning" size={20} color="#FF9500" />
+          <View style={styles.warningContent}>
+            <Text style={styles.warningTitle}>Safety Reminder</Text>
+            <Text style={styles.warningText}>
+              If this is an immediate emergency, call 911. This report will
+              be visible to the community and may take time to address.
+            </Text>
+          </View>
+        </View>
+      </ScrollView>
 
       {/* Footer */}
       <View style={styles.footer}>
-        {step < 4 ? (
-          <TouchableOpacity
-            style={[styles.button, !canProceed() && styles.buttonDisabled]}
-            onPress={handleNext}
-            disabled={!canProceed()}
-          >
-            <Text style={styles.buttonText}>Next</Text>
-            <Ionicons name="arrow-forward" size={20} color="white" />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-            <Ionicons name="checkmark-circle" size={20} color="white" />
-            <Text style={styles.buttonText}>Submit Report</Text>
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
+          <Ionicons name="checkmark-circle" size={20} color="white" />
+          <Text style={styles.buttonText}>Submit Report</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -526,6 +530,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F2F2F7",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#8E8E93",
   },
   header: {
     flexDirection: "row",
@@ -561,43 +574,92 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  progressContainer: {
-    height: 4,
-    backgroundColor: "#E5E5E7",
-  },
-  progressBar: {
-    height: 4,
-    backgroundColor: "#007AFF",
-  },
   content: {
-    flex: 1,
-  },
-  stepContainer: {
     flex: 1,
     padding: 20,
   },
-  stepTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: "#1C1C1E",
-    marginBottom: 8,
-    textAlign: "center",
+  autoFilledBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F0FFF0",
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 24,
   },
-  stepSubtitle: {
-    fontSize: 10,
+  autoFilledText: {
+    fontSize: 14,
+    color: "#34C759",
+    marginLeft: 8,
+    fontWeight: "600",
+  },
+  editableField: {
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  fieldHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  fieldLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1C1C1E",
+  },
+  editButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  editButtonText: {
+    fontSize: 14,
+    color: "#007AFF",
+    marginLeft: 4,
+  },
+  fieldContent: {
+    marginTop: 8,
+  },
+  typeDisplay: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  typeText: {
+    fontSize: 16,
+    color: "#1C1C1E",
+    marginLeft: 12,
+  },
+  locationDisplay: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+  },
+  locationText: {
+    fontSize: 16,
+    color: "#1C1C1E",
+    marginLeft: 8,
+    flex: 1,
+  },
+  descriptionText: {
+    fontSize: 16,
+    color: "#1C1C1E",
+  },
+  descriptionPlaceholder: {
+    fontSize: 16,
     color: "#8E8E93",
-    textAlign: "center",
-    marginBottom: 32,
+    fontStyle: "italic",
   },
   optionsContainer: {
-    gap: 16,
+    gap: 12,
   },
   optionCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    padding: 12,
     borderWidth: 2,
     borderColor: "transparent",
   },
@@ -606,86 +668,76 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F8FF",
   },
   optionIcon: {
-    width: 48,
-    height: 48,
-    backgroundColor: "#F0F8FF",
-    borderRadius: 24,
+    width: 32,
+    height: 32,
+    backgroundColor: "#007AFF",
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 16,
-  },
-  selectedOptionIcon: {
-    backgroundColor: "#007AFF",
-  },
-  optionContent: {
-    flex: 1,
+    marginRight: 12,
   },
   optionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 4,
-  },
-  optionDescription: {
     fontSize: 14,
-    color: "#8E8E93",
-  },
-  locationOptions: {
-    gap: 16,
-    marginBottom: 24,
-  },
-  locationOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  selectedLocationOption: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F8FF",
-  },
-  locationOptionText: {
-    fontSize: 16,
+    fontWeight: "500",
     color: "#1C1C1E",
-    marginLeft: 12,
   },
   inputContainer: {
-    marginTop: 16,
+    gap: 12,
   },
   textInput: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
     color: "#1C1C1E",
     borderWidth: 1,
     borderColor: "#E5E5E7",
   },
-  locationConfirm: {
+  refreshLocationButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F0FFF0",
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 16,
+    justifyContent: "center",
+    paddingVertical: 8,
   },
-  locationConfirmText: {
+  refreshLocationText: {
     fontSize: 14,
-    color: "#34C759",
-    marginLeft: 8,
-    flex: 1,
+    color: "#007AFF",
+    marginLeft: 4,
   },
-  section: {
-    marginBottom: 24,
+  severityBadge: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    alignSelf: "flex-start",
   },
-  sectionTitle: {
-    fontSize: 16,
+  severityBadgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "white",
+  },
+  severityContainer: {
+    gap: 8,
+  },
+  severityOption: {
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    padding: 12,
+    borderWidth: 2,
+    borderColor: "transparent",
+  },
+  selectedSeverity: {
+    borderColor: "#007AFF",
+    backgroundColor: "#F0F8FF",
+  },
+  severityLabel: {
+    fontSize: 14,
     fontWeight: "600",
     color: "#1C1C1E",
-    marginBottom: 12,
+    marginBottom: 2,
+  },
+  severityDescription: {
+    fontSize: 12,
+    color: "#8E8E93",
   },
   photosContainer: {
     flexDirection: "row",
@@ -696,8 +748,8 @@ const styles = StyleSheet.create({
     position: "relative",
   },
   photo: {
-    width: 80,
-    height: 80,
+    width: 60,
+    height: 60,
     borderRadius: 8,
   },
   removePhoto: {
@@ -706,106 +758,26 @@ const styles = StyleSheet.create({
     right: -6,
     backgroundColor: "#FF3B30",
     borderRadius: 12,
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     alignItems: "center",
     justifyContent: "center",
   },
-  addPhotoButton: {
-    width: 80,
-    height: 80,
-    backgroundColor: "white",
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: "#E5E5E7",
-    borderStyle: "dashed",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  addPhotoText: {
-    fontSize: 12,
-    color: "#007AFF",
-    marginTop: 4,
+  noPhotosText: {
+    fontSize: 14,
+    color: "#8E8E93",
+    fontStyle: "italic",
   },
   textArea: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 8,
+    padding: 12,
     fontSize: 16,
     color: "#1C1C1E",
     borderWidth: 1,
     borderColor: "#E5E5E7",
-    minHeight: 100,
+    minHeight: 80,
     textAlignVertical: "top",
-  },
-  severityContainer: {
-    gap: 12,
-  },
-  severityOption: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 2,
-    borderColor: "transparent",
-  },
-  selectedSeverity: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F8FF",
-  },
-  severityLabel: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    marginBottom: 4,
-  },
-  severityDescription: {
-    fontSize: 14,
-    color: "#8E8E93",
-  },
-  selectedSeverityText: {
-    color: "#007AFF",
-  },
-  reviewCard: {
-    backgroundColor: "white",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  reviewHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  reviewTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#1C1C1E",
-    flex: 1,
-    marginLeft: 12,
-  },
-  severityBadge: {
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  severityBadgeText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: "white",
-    textTransform: "capitalize",
-  },
-  reviewSection: {
-    marginBottom: 16,
-  },
-  reviewLabel: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginBottom: 4,
-  },
-  reviewValue: {
-    fontSize: 16,
-    color: "#1C1C1E",
   },
   warningCard: {
     backgroundColor: "#FFF8E1",
@@ -813,6 +785,7 @@ const styles = StyleSheet.create({
     padding: 16,
     flexDirection: "row",
     alignItems: "flex-start",
+    marginTop: 8,
   },
   warningContent: {
     flex: 1,
@@ -835,19 +808,8 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#E5E5E7",
   },
-  button: {
-    backgroundColor: "#007AFF",
-    borderRadius: 12,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  buttonDisabled: {
-    backgroundColor: "#C7C7CC",
-  },
   submitButton: {
-    backgroundColor: "#FF9500",
+    backgroundColor: "#34C759",
     borderRadius: 12,
     paddingVertical: 16,
     flexDirection: "row",
