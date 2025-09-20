@@ -26,12 +26,14 @@ def get_closest(df, lat, long):
         dists.append(meters_dist(lat, lat2, long, lon2) <= cutoff)
     
     copy = df[pd.Series(dists)]
-    if str(copy['danger_code']).lower() == 'nan':
+    if 'danger_code' not in copy.columns or str(copy['danger_code']).lower() == 'nan':
         copy['danger_code'] = [danger_scores[i] if i in danger_scores else 3 for i in copy.text_general_code]
 
     copy = copy[[
         "dc_dist", "dispatch_date_time", "location_block", "text_general_code", "lat", "lng", "danger_code"
-    ]]
+    ]].loc[:5, :] #Max is 5
+
+    print(copy.shape)
     return copy.T.to_json()
 
 

@@ -29,7 +29,7 @@ def insert():
     
     except Exception as e:
         print(f"Recieved error {e}") 
-        return {"error" : e}
+        return {"error" : str(e)}
     
 
 
@@ -41,7 +41,7 @@ def score():
     
     except Exception as e:
         print(f"Recieved error {e}")
-        return {"error" : e}
+        return {"error" : str(e)}
 
 
 if __name__ == "__main__":
