@@ -30,17 +30,15 @@ export default function SnapShotDetect() {
     try {
       const photo = await cameraRef.current.takePictureAsync({
         base64: false,
-        quality: 0.3,
+        quality: 0.7,
+        exif: false,
+        skipProcessing: true,
       });
 
       setCapturedPhoto(photo.uri);
       setMessage("Detecting...");
 
       const apiKey = "pSXeGpbofKfXU8Rubbi2";
-      const project = "graffiti-5sa0t";
-      const version = 1;
-
-      const url = `https://detect.roboflow.com/${project}/${version}?api_key=${apiKey}&confidence=0.3&overlap=0.3`;
 
       const formData = new FormData();
       formData.append("file", {
@@ -49,23 +47,44 @@ export default function SnapShotDetect() {
         name: "snap.jpg",
       } as any);
 
-      const rfRes = await fetch(url, { method: "POST", body: formData });
-      const data = await rfRes.json();
+      // Two model endpoints
+      const graffitiUrl = `https://detect.roboflow.com/graffiti-5sa0t/1?api_key=${apiKey}&confidence=0.15&overlap=0.3`;
+      const trashUrl = `https://detect.roboflow.com/trash-8lges/1?api_key=${apiKey}&confidence=0.15&overlap=0.3`;
 
-      if (Array.isArray(data?.predictions) && data.predictions.length > 0) {
-        const best = data.predictions.reduce((max: Prediction, p: Prediction) =>
+      // Send to both models in parallel
+      const [graffitiRes, trashRes] = await Promise.all([
+        fetch(graffitiUrl, { method: "POST", body: formData }),
+        fetch(trashUrl, { method: "POST", body: formData }),
+      ]);
+
+      const graffitiData = await graffitiRes.json();
+      const trashData = await trashRes.json();
+
+      // Collect predictions from both
+      const graffitiPreds: Prediction[] = graffitiData?.predictions || [];
+      const trashPreds: Prediction[] = trashData?.predictions || [];
+      const allPredictions: Prediction[] = [...graffitiPreds, ...trashPreds];
+
+      if (allPredictions.length > 0) {
+        // Pick strongest prediction overall
+        const best = allPredictions.reduce((max, p) =>
           p.confidence > max.confidence ? p : max
         );
 
-        if (best.confidence >= 0.3) {
-          // ✅ redirect if threshold met
+        if (best.confidence >= 0.0) {
+          // Decide type based on which array contains the best
+          let autoType: string = "vandalism";
+          if (trashPreds.includes(best)) {
+            autoType = "trash";
+          }
+
           navigation.navigate("Main", {
             screen: "Report",
-            params: { autoType: "vandalism" },
+            params: { autoType },
           });
         } else {
           setMessage(
-            `No anomalies above 30%. Closest: ${best.class} ${(
+            `No anomalies above 20%. Closest: ${best.class} ${(
               best.confidence * 100
             ).toFixed(1)}%`
           );
@@ -114,6 +133,16 @@ export default function SnapShotDetect() {
       ) : (
         <>
           <CameraView style={styles.camera} facing="back" ref={cameraRef} />
+
+          {/* 🔙 Back Button */}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.backText}>← Back</Text>
+          </TouchableOpacity>
+
+          {/* 📸 Capture Button */}
           <TouchableOpacity style={styles.shutter} onPress={takeAndDetect} />
         </>
       )}
@@ -156,4 +185,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 6,
   },
+  backButton: {
+    position: "absolute",
+    top: 40,
+    left: 20,
+    padding: 10,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    borderRadius: 6,
+  },
+  backText: { color: "#fff", fontSize: 16 },
 });

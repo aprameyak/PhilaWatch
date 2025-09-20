@@ -70,12 +70,12 @@ const ReportScreen = () => {
 
   const [step, setStep] = useState(1);
   const [reportData, setReportData] = useState<ReportData>({
-    type: (route.params as any)?.autoType || "", 
+    type: (route.params as any)?.autoType || "",
     location: "",
-    useCurrentLocation: true,
+    useCurrentLocation: false,
     photos: [],
     description: "",
-    severity: "medium",
+    severity: "",
     anonymous: true,
     contact: "",
   });
@@ -176,7 +176,13 @@ const ReportScreen = () => {
       case 1:
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.stepTitle}>What are you reporting?</Text>
+            <Text style={styles.stepTitle}>
+              {(route.params as any)?.autoType
+                ? reportData.type.charAt(0).toString().toUpperCase() +
+                  reportData.type.slice(1) +
+                  " Detected!"
+                : "What is being reported?"}{" "}
+            </Text>
             <Text style={styles.stepSubtitle}>
               Select the type of issue you want to report to Law Enforcement or
               the Department of Public Works at Philadelphia.{" "}
