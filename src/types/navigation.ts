@@ -1,0 +1,40 @@
+import { NavigatorScreenParams } from '@react-navigation/native';
+import { Incident } from '../data/mockData';
+
+export type RootStackParamList = {
+  Main: NavigatorScreenParams<MainTabParamList> | undefined;
+  IncidentDetails: { incident: Incident };
+  Onboarding: undefined;
+};
+
+export type MainTabParamList = {
+  Map: undefined;
+  Search: undefined;
+  Report: undefined;
+  Profile: undefined;
+  Filter: {
+    currentFilters?: AppFilters;
+  };
+};
+
+export interface AppFilters {
+  timeRange: string;
+  customStartDate?: Date;
+  customEndDate?: Date;
+  crimeTypes: string[];
+  timeOfDay: string[];
+  dataSources: {
+    official: boolean;
+    community: boolean;
+  };
+  heatmapIntensity: number[];
+  heatmapRadius: number[];
+  showHeatmap: boolean;
+  searchLocation: string;
+}
+
+declare global {
+  namespace ReactNavigation {
+    interface RootParamList extends RootStackParamList {}
+  }
+}
