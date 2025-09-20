@@ -140,7 +140,7 @@ const ReportScreen = () => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.stepTitle}>What are you reporting?</Text>
-            <Text style={styles.stepSubtitle}>Select the type of issue you want to report</Text>
+            <Text style={styles.stepSubtitle}>Select the type of issue you want to report to Law Enforcement or the Department of Public Works at Philadelphia. </Text>
             
             <View style={styles.optionsContainer}>
               {reportTypes.map((type) => (
