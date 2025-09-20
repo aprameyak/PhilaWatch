@@ -21,11 +21,13 @@ df = pd.read_csv("crime_2025.csv")
 
 def get_closest(df, lat, long):
     dists = []
-    cutoff = 100
     for lat2, lon2 in zip(df.lat, df.lng):
-        dists.append(meters_dist(lat, lat2, long, lon2) <= cutoff)
+        dists.append(meters_dist(lat, lat2, long, lon2))
     
-    copy = df[pd.Series(dists)]
+    copy = df.copy()
+    copy['dist'] = dists
+    copy = copy.sort_values(by = 'dist').loc[5, :]
+
     if str(copy['danger_code']).lower() == 'nan':
         copy['danger_code'] = [danger_scores[i] if i in danger_scores else 3 for i in copy.text_general_code]
 
