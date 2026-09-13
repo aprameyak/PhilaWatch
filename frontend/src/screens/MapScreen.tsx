@@ -524,7 +524,7 @@ const MapScreen = () => {
             <Ionicons name={"menu-outline"} size={25} />
           </Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>PhillyWatch</Text>
+        <Text style={styles.headerTitle}>PhilaWatch</Text>
         <Text>
           {" "}
           <Ionicons name={"person-circle-outline"} size={25} />

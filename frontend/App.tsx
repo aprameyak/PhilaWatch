@@ -19,6 +19,7 @@ import SnapShot from "./src/screens/Snapshot";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import IncidentDetailsScreen from "./src/screens/IncidentDetailsScreen";
 import LeaderboardScreen from "./src/screens/LeaderboardScreen";
+
 // Types
 import {
   RootStackParamList,
@@ -38,7 +39,6 @@ function MainTabs() {
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap;
-
           if (route.name === "Map") {
             iconName = focused ? "map" : "map-outline";
           } else if (route.name === "Search") {
@@ -52,7 +52,6 @@ function MainTabs() {
           } else {
             iconName = "ellipse-outline";
           }
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: "#387bb5",
@@ -81,7 +80,6 @@ export default function App() {
       }
     });
   }, []);
-
 
   if (isFirstLaunch === null) {
     return null; // Loading state
