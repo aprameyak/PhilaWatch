@@ -4,10 +4,17 @@ import pandas as pd
 import requests
 import threading
 from score import score_single
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 app = Flask(__name__)
 
-df = pd.read_csv("crime_2025.csv")
+# Load CSV file from environment variable
+CSV_FILE_PATH = os.getenv("CSV_FILE_PATH", "crime_2025.csv")
+df = pd.read_csv(CSV_FILE_PATH)
 
 
 
@@ -35,7 +42,7 @@ def insert():
 
         # Append row correctly
         copy = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
-        copy.to_csv("crime_2025.csv", index=False)
+        copy.to_csv(CSV_FILE_PATH, index=False)
 
         # Return last row as JSON
         last_row = copy.iloc[-1, :].to_dict()
@@ -111,4 +118,7 @@ def get_data(id):
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    debug = os.getenv("DEBUG", "True").lower() == "true"
+    app.run(host=host, port=port, debug=debug)

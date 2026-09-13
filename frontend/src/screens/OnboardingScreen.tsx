@@ -41,7 +41,7 @@ const OnboardingScreen = () => {
   return (
     <ImageBackground
       source={{
-        uri: 'https://images.unsplash.com/photo-1641956405046-5e81c5bcff14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGlsYWRlbHBoaWElMjBjaXR5JTIwc2t5bGluZXxlbnwxfHx8fDE3NTgzMzg4MDF8MA&ixlib=rb-4.1.0&q=80&w=1080'
+        uri: process.env.REACT_APP_ONBOARDING_IMAGE_URL || 'https://images.unsplash.com/photo-1641956405046-5e81c5bcff14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGlsYWRlbHBoaWElMjBjaXR5JTIwc2t5bGluZXxlbnwxfHx8fDE3NTgzMzg4MDF8MA&ixlib=rb-4.1.0&q=80&w=1080'
       }}
       style={styles.background}
     >

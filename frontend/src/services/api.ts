@@ -1,5 +1,5 @@
 // API service for PhillySafe backend
-const API_BASE_URL = 'http://localhost:8000'; // Change this to your backend URL
+const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
 
 export interface Incident {
   id?: string;

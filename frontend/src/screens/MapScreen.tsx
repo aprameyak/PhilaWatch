@@ -103,7 +103,7 @@ const MapScreen = () => {
     <body>
       <div id="map"></div>
       
-      <script src="https://unpkg.com/deck.gl@^8.9.0/dist.min.js"></script>
+      <script src="${process.env.REACT_APP_DECKGL_CDN_URL || 'https://unpkg.com/deck.gl@^8.9.0/dist.min.js'}"></script>
       <script>
         let map;
         let deckOverlay;
@@ -342,7 +342,7 @@ const MapScreen = () => {
         function loadGoogleMaps() {
           console.log('Loading Google Maps API...');
           const script = document.createElement('script');
-          script.src = 'https://maps.googleapis.com/maps/api/js?key=AIzaSyD76ShbpMOEu02aheDb3n2gATANFZc1hgM&callback=initMap';
+          script.src = \`https://maps.googleapis.com/maps/api/js?key=\${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&callback=initMap\`;
           script.onerror = function() {
             console.error('Failed to load Google Maps API');
             if (window.ReactNativeWebView) {

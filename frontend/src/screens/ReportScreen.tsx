@@ -64,8 +64,8 @@ const severityLevels = [
   },
 ];
 
-// Replace with your actual Google Maps API key
-const GOOGLE_MAPS_API_KEY = "AIzaSyD76ShbpMOEu02aheDb3n2gATANFZc1hgM";
+// Google Maps API key from environment variables
+const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyD76ShbpMOEu02aheDb3n2gATANFZc1hgM";
 
 const ReportScreen = () => {
   const route = useRoute();

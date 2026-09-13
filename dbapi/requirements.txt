@@ -1,3 +1,4 @@
 cerebras_cloud_sdk
 pandas 
 flask
+python-dotenv

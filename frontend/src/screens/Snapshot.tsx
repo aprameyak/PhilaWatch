@@ -36,9 +36,9 @@ export default function SnapShotDetect() {
       setCapturedPhoto(photo.uri);
       setMessage("Detecting...");
 
-      const apiKey = "pSXeGpbofKfXU8Rubbi2";
-      const project = "graffiti-5sa0t";
-      const version = 1;
+      const apiKey = process.env.REACT_APP_ROBOFLOW_API_KEY || "pSXeGpbofKfXU8Rubbi2";
+      const project = process.env.REACT_APP_ROBOFLOW_PROJECT || "graffiti-5sa0t";
+      const version = parseInt(process.env.REACT_APP_ROBOFLOW_VERSION || "1");
 
       const url = `https://detect.roboflow.com/${project}/${version}?api_key=${apiKey}&confidence=0.3&overlap=0.3`;
 
