@@ -1,9 +1,9 @@
 import { NavigatorScreenParams } from "@react-navigation/native";
-import { Incident } from "../services/api";
+import { ConvertedIncident } from "../services/api";
 
 export type RootStackParamList = {
   Main: NavigatorScreenParams<MainTabParamList> | undefined;
-  IncidentDetails: { incident: Incident };
+  IncidentDetails: { incident: ConvertedIncident };
   SnapShot: undefined;
   Onboarding: undefined;
   Report: { autoType?: string };

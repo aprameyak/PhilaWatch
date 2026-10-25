@@ -10,12 +10,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Incident } from '../services/api';
+import { ConvertedIncident } from '../services/api';
 
 const IncidentDetailsScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const { incident } = route.params as { incident: Incident };
+  const { incident } = route.params as { incident: ConvertedIncident };
 
   const formatTime = (timeString: string) => {
     const date = new Date(timeString);
