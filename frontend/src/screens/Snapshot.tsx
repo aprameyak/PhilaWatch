@@ -36,9 +36,9 @@ export default function SnapShotDetect() {
       setCapturedPhoto(photo.uri);
       setMessage("Detecting...");
 
-      const apiKey = process.env.REACT_APP_ROBOFLOW_API_KEY || "pSXeGpbofKfXU8Rubbi2";
-      const project = process.env.REACT_APP_ROBOFLOW_PROJECT || "graffiti-5sa0t";
-      const version = parseInt(process.env.REACT_APP_ROBOFLOW_VERSION || "1");
+      const apiKey = process.env.EXPO_PUBLIC_ROBOFLOW_API_KEY;
+      const project = process.env.EXPO_PUBLIC_ROBOFLOW_PROJECT || "graffiti-5sa0t";
+      const version = parseInt(process.env.EXPO_PUBLIC_ROBOFLOW_VERSION || "1");
 
       const url = `https://detect.roboflow.com/${project}/${version}?api_key=${apiKey}&confidence=0.3&overlap=0.3`;
 
@@ -58,7 +58,6 @@ export default function SnapShotDetect() {
         );
 
         if (best.confidence >= 0.3) {
-          // ✅ redirect if threshold met
           navigation.navigate("Main", {
             screen: "Report",
             params: { autoType: "vandalism" },

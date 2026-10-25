@@ -39,5 +39,4 @@ export const useCrime = (): UseCrimeReturn => {
   };
 };
 
-// Keep the old hook for backward compatibility
 export const useIncidents = useCrime;

@@ -1,5 +1,4 @@
-// API service for PhillySafe backend
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:8000';
 
 export interface Incident {
   id?: string;
@@ -24,7 +23,6 @@ export interface Incident {
   lng?: number;
 }
 
-// Converted incident data for UI display
 export interface ConvertedIncident {
   id: string;
   type: string;
@@ -66,7 +64,6 @@ export interface CreateIncidentRequest {
   lng?: number;
 }
 
-// User Report Interfaces
 export interface UserReport {
   id: string;
   type: string;
@@ -95,10 +92,9 @@ export interface CreateUserReportRequest {
   contact?: string;
   lat?: number;
   lng?: number;
-  user_id?: string; // Add user_id for gamification
+  user_id?: string;
 }
 
-// User Data Interfaces for Gamification
 export interface UserData {
   id: string;
   user_id: string;
@@ -154,7 +150,6 @@ export interface UpdateUserDataRequest {
   badges?: string[];
 }
 
-// Authentication Interfaces
 export interface User {
   id: string;
   username: string;
@@ -210,17 +205,14 @@ class ApiService {
     }
   }
 
-  // Get all crime data
   async getCrime(): Promise<Incident[]> {
     return this.request<Incident[]>('/crime');
   }
 
-  // Get a specific crime record by ID
   async getCrimeById(id: string): Promise<Incident> {
     return this.request<Incident>(`/crime/${id}`);
   }
 
-  // Create a new crime record
   async createCrime(incident: CreateIncidentRequest): Promise<Incident> {
     return this.request<Incident>('/crime', {
       method: 'POST',
@@ -228,18 +220,14 @@ class ApiService {
     });
   }
 
-  // User Reports API Methods
-  // Get all user reports
   async getUserReports(): Promise<UserReport[]> {
     return this.request<UserReport[]>('/reports');
   }
 
-  // Get a specific user report by ID
   async getUserReportById(id: string): Promise<UserReport> {
     return this.request<UserReport>(`/reports/${id}`);
   }
 
-  // Create a new user report
   async createUserReport(report: CreateUserReportRequest): Promise<UserReport> {
     return this.request<UserReport>('/reports', {
       method: 'POST',
@@ -247,7 +235,6 @@ class ApiService {
     });
   }
 
-  // Update report status (for admin use)
   async updateReportStatus(reportId: string, status: string): Promise<UserReport> {
     return this.request<UserReport>(`/reports/${reportId}/status`, {
       method: 'PUT',
@@ -255,13 +242,10 @@ class ApiService {
     });
   }
 
-  // User Data API Methods (Gamification)
-  // Get user data and statistics
   async getUserData(userId: string): Promise<UserData> {
     return this.request<UserData>(`/userdata/${userId}`);
   }
 
-  // Create new user data
   async createUserData(userData: CreateUserDataRequest): Promise<UserData> {
     return this.request<UserData>('/userdata', {
       method: 'POST',
@@ -269,13 +253,10 @@ class ApiService {
     });
   }
 
-  // Get leaderboard (all users sorted by total submissions)
   async getLeaderboard(): Promise<UserData[]> {
     return this.request<UserData[]>('/userdata/leaderboard');
   }
 
-  // Authentication API Methods
-  // Register a new user
   async registerUser(userData: UserRegister): Promise<User> {
     return this.request<User>('/auth/register', {
       method: 'POST',
@@ -283,7 +264,6 @@ class ApiService {
     });
   }
 
-  // Login user
   async loginUser(loginData: UserLogin): Promise<User> {
     return this.request<User>('/auth/login', {
       method: 'POST',
@@ -291,19 +271,16 @@ class ApiService {
     });
   }
 
-  // Get user by username
   async getUserByUsername(username: string): Promise<User> {
     return this.request<User>(`/auth/users/${username}`);
   }
 
-  // Update user contributions
   async updateUserContributions(username: string, contributions: number): Promise<{message: string}> {
     return this.request<{message: string}>(`/auth/users/${username}/contributions?contributions=${contributions}`, {
       method: 'PUT',
     });
   }
 
-  // Convert API incident to map-compatible format
   convertToMapData(incidents: Incident[]) {
     return incidents.map(incident => ({
       id: incident.id || incident._id,
@@ -315,7 +292,7 @@ class ApiService {
       address: incident.location_block || 'Unknown Location',
       neighborhood: this.extractNeighborhood(incident.location_block),
       type: incident.text_general_code || 'Unknown Crime',
-      source: 'official', // All data from MongoDB is official
+      source: 'official',
       description: incident.text_general_code,
       hour: incident.hour,
       dc_dist: incident.dc_dist,
@@ -326,7 +303,6 @@ class ApiService {
   private getCrimeTypeFromUCR(ucr_general?: number): string {
     if (!ucr_general) return 'other';
     
-    // Map UCR codes to crime types
     if (ucr_general >= 100 && ucr_general < 200) return 'violent';
     if (ucr_general >= 200 && ucr_general < 300) return 'property';
     if (ucr_general >= 300 && ucr_general < 400) return 'violent';
@@ -341,23 +317,20 @@ class ApiService {
   private getSeverityFromUCR(ucr_general?: number): number {
     if (!ucr_general) return 1;
     
-    // Map UCR codes to severity levels
-    if (ucr_general >= 100 && ucr_general < 200) return 3; // Violent crimes
-    if (ucr_general >= 200 && ucr_general < 300) return 2; // Property crimes
-    if (ucr_general >= 300 && ucr_general < 400) return 3; // Violent crimes
-    if (ucr_general >= 400 && ucr_general < 500) return 2; // Property crimes
-    if (ucr_general >= 500 && ucr_general < 600) return 2; // Property crimes
-    if (ucr_general >= 600 && ucr_general < 700) return 2; // Vehicle crimes
-    if (ucr_general >= 700 && ucr_general < 800) return 3; // Drug crimes
-    if (ucr_general >= 800 && ucr_general < 900) return 1; // Vandalism
+    if (ucr_general >= 100 && ucr_general < 200) return 3;
+    if (ucr_general >= 200 && ucr_general < 300) return 2;
+    if (ucr_general >= 300 && ucr_general < 400) return 3;
+    if (ucr_general >= 400 && ucr_general < 500) return 2;
+    if (ucr_general >= 500 && ucr_general < 600) return 2;
+    if (ucr_general >= 600 && ucr_general < 700) return 2;
+    if (ucr_general >= 700 && ucr_general < 800) return 3;
+    if (ucr_general >= 800 && ucr_general < 900) return 1;
     return 1;
   }
 
   private extractNeighborhood(location_block?: string): string {
     if (!location_block) return 'Unknown';
     
-    // Extract neighborhood from location block
-    // This is a simple extraction - you might want to improve this
     const parts = location_block.split(' ');
     if (parts.length > 2) {
       return parts.slice(2).join(' ');
@@ -366,6 +339,5 @@ class ApiService {
   }
 }
 
-// Export singleton instance
 export const apiService = new ApiService();
 export default apiService;

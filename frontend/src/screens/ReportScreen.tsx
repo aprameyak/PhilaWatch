@@ -64,8 +64,7 @@ const severityLevels = [
   },
 ];
 
-// Google Maps API key from environment variables
-const GOOGLE_MAPS_API_KEY = process.env.REACT_APP_GOOGLE_MAPS_API_KEY || "AIzaSyD76ShbpMOEu02aheDb3n2gATANFZc1hgM";
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
 
 const ReportScreen = () => {
   const route = useRoute();
@@ -84,7 +83,6 @@ const ReportScreen = () => {
     contact: "",
   });
 
-  // Auto-fill data on component mount
   useEffect(() => {
     autofillReportData();
   }, []);
@@ -93,17 +91,13 @@ const ReportScreen = () => {
     setIsLoading(true);
     
     try {
-      // Auto-fill type if not provided
       let autoType = reportData.type;
       if (!autoType) {
-        // Default to most common report type or use AI detection logic
         autoType = "trash";
       }
 
-      // Auto-fill location using GPS + Google Maps
       const locationData = await getLocationWithAddress();
       
-      // Auto-fill severity based on type (you can customize this logic)
       const autoSeverity = getAutoSeverity(autoType);
 
       setReportData(prev => ({
@@ -112,7 +106,6 @@ const ReportScreen = () => {
         location: locationData.address,
         coordinates: locationData.coordinates,
         severity: autoSeverity,
-        // description remains optional and empty
       }));
 
     } catch (error) {
@@ -136,7 +129,6 @@ const ReportScreen = () => {
 
       const { latitude, longitude } = location.coords;
       
-      // Use Google Maps Geocoding API for more accurate address
       const address = await getAddressFromGoogleMaps(latitude, longitude);
       
       return {
@@ -145,7 +137,6 @@ const ReportScreen = () => {
       };
     } catch (error) {
       console.error("Location error:", error);
-      // Fallback to Expo's reverse geocoding
       return await getFallbackLocation();
     }
   };
@@ -190,14 +181,13 @@ const ReportScreen = () => {
       throw new Error("Unable to get address");
     } catch (error) {
       return {
-        address: "Philadelphia, PA, USA", // Default fallback
-        coordinates: { latitude: 39.9526, longitude: -75.1652 } // Philadelphia coordinates
+        address: "Philadelphia, PA, USA",
+        coordinates: { latitude: 39.9526, longitude: -75.1652 }
       };
     }
   };
 
   const getAutoSeverity = (type: string) => {
-    // Auto-determine severity based on report type
     switch (type) {
       case "suspicious":
         return "high";
@@ -301,7 +291,6 @@ const ReportScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
@@ -324,7 +313,6 @@ const ReportScreen = () => {
           <Text style={styles.autoFilledText}>Report auto-filled successfully</Text>
         </View>
 
-        {/* Report Type */}
         {renderEditableField(
           "Report Type",
           "type",
@@ -362,7 +350,6 @@ const ReportScreen = () => {
           )
         )}
 
-        {/* Location */}
         {renderEditableField(
           "Location",
           "location",
@@ -399,7 +386,6 @@ const ReportScreen = () => {
           )
         )}
 
-        {/* Severity */}
         {renderEditableField(
           "Severity",
           "severity",
@@ -444,7 +430,6 @@ const ReportScreen = () => {
           )
         )}
 
-        {/* Photos */}
         <View style={styles.editableField}>
           <View style={styles.fieldHeader}>
             <Text style={styles.fieldLabel}>Photos (Optional)</Text>
@@ -477,7 +462,6 @@ const ReportScreen = () => {
           </View>
         </View>
 
-        {/* Description */}
         {renderEditableField(
           "Description (Optional)",
           "description",
@@ -502,7 +486,6 @@ const ReportScreen = () => {
           )
         )}
 
-        {/* Warning Card */}
         <View style={styles.warningCard}>
           <Ionicons name="warning" size={20} color="#FF9500" />
           <View style={styles.warningContent}>
@@ -515,7 +498,6 @@ const ReportScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Footer */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Ionicons name="checkmark-circle" size={20} color="white" />

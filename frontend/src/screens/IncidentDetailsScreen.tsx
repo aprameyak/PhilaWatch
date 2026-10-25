@@ -80,7 +80,6 @@ const IncidentDetailsScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -113,7 +112,6 @@ const IncidentDetailsScreen = () => {
           </View>
         </View>
 
-        {/* Location Info */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="location" size={20} color="#007AFF" />
@@ -124,7 +122,6 @@ const IncidentDetailsScreen = () => {
           <Text style={styles.distance}>{incident.distance} miles from your location</Text>
         </View>
 
-        {/* Time Info */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="time" size={20} color="#FF9500" />
@@ -134,7 +131,6 @@ const IncidentDetailsScreen = () => {
           <Text style={styles.time}>{timeInfo.time}</Text>
         </View>
 
-        {/* Description */}
         {incident.description && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -145,7 +141,6 @@ const IncidentDetailsScreen = () => {
           </View>
         )}
 
-        {/* Case Details */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Ionicons name="shield-checkmark" size={20} color="#8E4EC6" />
@@ -177,7 +172,6 @@ const IncidentDetailsScreen = () => {
           )}
         </View>
 
-        {/* Photos */}
         {incident.photos && incident.photos.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -188,7 +182,6 @@ const IncidentDetailsScreen = () => {
           </View>
         )}
 
-        {/* Actions */}
         <View style={styles.actionsSection}>
           <TouchableOpacity style={styles.actionButton}>
             <Ionicons name="flag" size={20} color="#FF3B30" />
@@ -206,7 +199,6 @@ const IncidentDetailsScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Safety Tips */}
         <View style={styles.safetySection}>
           <View style={styles.safetyHeader}>
             <Ionicons name="shield" size={20} color="#FF9500" />

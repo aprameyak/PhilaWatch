@@ -27,7 +27,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const isAuthenticated = !!user;
 
-  // Load user from storage on app start
   useEffect(() => {
     loadUserFromStorage();
   }, []);

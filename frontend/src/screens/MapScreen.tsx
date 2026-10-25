@@ -20,8 +20,6 @@ import { apiService } from "../services/api";
 
 const { width, height } = Dimensions.get("window");
 
-// Crime data will now be fetched from the API
-
 const MapScreen = () => {
   const navigation = useNavigation();
   const webViewRef = useRef(null);
@@ -40,7 +38,6 @@ const MapScreen = () => {
     getCurrentLocation();
   }, []);
 
-  // Update crime data when incidents are loaded
   useEffect(() => {
     if (incidents && incidents.length > 0) {
       const mapData = apiService.convertToMapData(incidents);
@@ -76,7 +73,6 @@ const MapScreen = () => {
   };
 
 
-  // Single HTML file with everything embedded
   const createMapHTML = () => {
     const crimeDataJson = JSON.stringify(crimeData);
     const userLocationJson = userLocation
@@ -103,22 +99,19 @@ const MapScreen = () => {
     <body>
       <div id="map"></div>
       
-      <script src="${process.env.REACT_APP_DECKGL_CDN_URL || 'https://unpkg.com/deck.gl@^8.9.0/dist.min.js'}"></script>
+      <script src="${process.env.EXPO_PUBLIC_DECKGL_CDN_URL || 'https://unpkg.com/deck.gl@^8.9.0/dist.min.js'}"></script>
       <script>
         let map;
         let deckOverlay;
         
-        // Hardcoded Philadelphia crime data
         const crimeData = ${crimeDataJson};
         const userLocation = ${userLocationJson};
         
-        // Tooltip configuration
         const RADIUS_METERS = 200; // Constant radius for incident queries
         let tooltipTimeout;
         
         console.log('Loading map with', crimeData.length, 'crime incidents');
         
-        // Distance calculation function
         function calculateDistance(lat1, lng1, lat2, lng2) {
           const R = 6371000; // Earth's radius in meters
           const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -130,7 +123,6 @@ const MapScreen = () => {
           return R * c; // Distance in meters
         }
         
-        // Query incidents within radius
         function queryIncidentsInRadius(lat, lng, radiusMeters) {
           return crimeData.filter(incident => {
             const distance = calculateDistance(lat, lng, incident.latitude, incident.longitude);
@@ -138,7 +130,6 @@ const MapScreen = () => {
           });
         }
         
-        // Hide existing tooltip
         function hideTooltip() {
           const existingTooltip = document.getElementById('tap-tooltip');
           if (existingTooltip) {
@@ -149,15 +140,12 @@ const MapScreen = () => {
           }
         }
         
-        // Show tooltip with incident details
         function showTooltip(incidents, latLng, event) {
           hideTooltip();
           
-          // Create tooltip element
           const tooltip = document.createElement('div');
           tooltip.id = 'tap-tooltip';
           
-          // Get crime type breakdown
           const crimeTypes = {};
           incidents.forEach(incident => {
             const type = incident.crime_type || 'Unknown';
@@ -194,14 +182,12 @@ const MapScreen = () => {
             </div>
           \`;
           
-          // Position tooltip at tap location
           const mapDiv = document.getElementById('map');
           const rect = mapDiv.getBoundingClientRect();
           tooltip.style.position = 'absolute';
           tooltip.style.left = (event.pixel.x + 10) + 'px';
           tooltip.style.top = (event.pixel.y - 10) + 'px';
           
-          // Ensure tooltip stays within map bounds
           const tooltipRect = tooltip.getBoundingClientRect();
           if (event.pixel.x + 250 > rect.width) {
             tooltip.style.left = (event.pixel.x - 260) + 'px';
@@ -212,11 +198,9 @@ const MapScreen = () => {
           
           mapDiv.appendChild(tooltip);
           
-          // Auto-hide after 4 seconds
           tooltipTimeout = setTimeout(hideTooltip, 4000);
         }
         
-        // Add tap functionality to map
         function addTapTooltipFunctionality() {
           map.addListener('click', (event) => {
             const lat = event.latLng.lat();
@@ -224,12 +208,10 @@ const MapScreen = () => {
             
             console.log('Map tapped at:', lat, lng);
             
-            // Query incidents in radius around tap point
             const incidents = queryIncidentsInRadius(lat, lng, RADIUS_METERS);
             
             console.log('Found', incidents.length, 'incidents within', RADIUS_METERS, 'meters');
             
-            // Show tooltip with results
             showTooltip(incidents, event.latLng, event);
           });
           
@@ -240,7 +222,6 @@ const MapScreen = () => {
           try {
             console.log('Initializing Google Maps...');
             
-            // Create Google Map centered on Philadelphia
             map = new google.maps.Map(document.getElementById('map'), {
               center: { lat: 39.9526, lng: -75.1652 },
               zoom: 12,
@@ -253,7 +234,6 @@ const MapScreen = () => {
             
             console.log('Map created, processing crime data...');
             
-            // Convert crime data for Deck.gl heatmap
             const heatmapData = crimeData.map(incident => ({
               longitude: incident.longitude,
               latitude: incident.latitude,
@@ -262,7 +242,6 @@ const MapScreen = () => {
             
             console.log('Heatmap data processed:', heatmapData.length, 'points');
             
-            // Create Deck.gl heatmap layer
             const heatmapLayer = new deck.HeatmapLayer({
               id: 'philadelphia-crime-heatmap',
               data: heatmapData,
@@ -284,7 +263,6 @@ const MapScreen = () => {
             
             console.log('Creating Deck.gl overlay...');
             
-            // Create Deck.gl overlay on Google Maps
             deckOverlay = new deck.GoogleMapsOverlay({
               layers: [heatmapLayer]
             });
@@ -292,7 +270,6 @@ const MapScreen = () => {
             
             console.log('Deck.gl overlay added to map');
             
-            // Add user location marker if available
             if (userLocation && userLocation !== null) {
               new google.maps.Marker({
                 position: { lat: userLocation.lat, lng: userLocation.lng },
@@ -311,10 +288,8 @@ const MapScreen = () => {
             }
             
             
-            // Add tap functionality for tooltips
             addTapTooltipFunctionality();
             
-            // Notify React Native that map is ready
             setTimeout(function() {
               if (window.ReactNativeWebView) {
                 window.ReactNativeWebView.postMessage(JSON.stringify({
@@ -338,11 +313,10 @@ const MapScreen = () => {
         }
         
         
-        // Load Google Maps API with hardcoded key
         function loadGoogleMaps() {
           console.log('Loading Google Maps API...');
           const script = document.createElement('script');
-          script.src = \`https://maps.googleapis.com/maps/api/js?key=\${process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&callback=initMap\`;
+          script.src = \`https://maps.googleapis.com/maps/api/js?key=${process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY}&callback=initMap\`;
           script.onerror = function() {
             console.error('Failed to load Google Maps API');
             if (window.ReactNativeWebView) {
@@ -355,7 +329,6 @@ const MapScreen = () => {
           document.head.appendChild(script);
         }
         
-        // Initialize when page loads
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', loadGoogleMaps);
         } else {
@@ -390,7 +363,6 @@ const MapScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.headerButton}>
           <Text>
@@ -405,7 +377,6 @@ const MapScreen = () => {
           </Text>
       </View>
 
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <TouchableOpacity style={styles.searchBar} onPress={handleSearchPress}>
           <Text style={styles.searchIcon}>
@@ -422,7 +393,6 @@ const MapScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Filter Chips */}
       <View style={styles.filterContainer}>
         <View style={styles.filterChip}>
           <Text style={styles.filterChipText}>{currentFilters.timeRange}</Text>
@@ -444,7 +414,6 @@ const MapScreen = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Map WebView */}
       <View style={styles.mapContainer}>
         {(isLoading || incidentsLoading) && (
           <View style={styles.loadingContainer}>
@@ -484,7 +453,6 @@ const MapScreen = () => {
         />
       </View>
 
-      {/* Report Crime FAB */}
       <TouchableOpacity style={styles.fab} onPress={handleReportPress}>
         <Text style={styles.fabText}>
           {" "}

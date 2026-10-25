@@ -8,8 +8,8 @@ from score import generate
 from datetime import datetime
 
 def meters_dist(lat1, lat2, lon1, lon2):
-    dx = (lon2 - lon1) * 111_320 * cos(radians((lat1 + lat2)/2))  # meters
-    dy = (lat2 - lat1) * 110_540  # meters
+    dx = (lon2 - lon1) * 111_320 * cos(radians((lat1 + lat2)/2))
+    dy = (lat2 - lat1) * 110_540
 
     distance = hypot(dx, dy)
 
@@ -35,7 +35,6 @@ def get_closest(df, lat, long):
         "dc_dist", "dispatch_date_time", "location_block", "text_general_code", "lat", "lng", "danger_code"
     ]]
     return copy.T.to_json()
-
 
 
 def get_rating(lat, long, time):

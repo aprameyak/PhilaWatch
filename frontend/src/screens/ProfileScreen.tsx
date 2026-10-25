@@ -13,7 +13,6 @@ import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService, UserData } from '../services/api';
 
-// Status levels with dynamic thresholds
 const STATUS_LEVELS = [
   { name: 'Newbie Helper', minReports: 0, maxReports: 2, icon: 'leaf', color: '#8E8E93', description: 'Just got started' },
   { name: 'Good Samaritan', minReports: 3, maxReports: 7, icon: 'heart', color: '#34C759', description: 'Helped a few people' },
@@ -29,7 +28,6 @@ const ProfileScreen = () => {
   const { user, logout } = useAuth();
   const [userData, setUserData] = useState<UserData | null>(null);
 
-  // Fetch user data on component mount
   useEffect(() => {
     const fetchUserData = async () => {
       if (user?.username) {
@@ -60,7 +58,6 @@ const ProfileScreen = () => {
     );
   };
 
-  // Calculate current status based on total submissions
   const getCurrentStatus = () => {
     const totalReports = userData?.total_submissions || 0;
     return STATUS_LEVELS.find(level => 
@@ -68,13 +65,11 @@ const ProfileScreen = () => {
     ) || STATUS_LEVELS[0];
   };
 
-  // Calculate progress to next level
   const getProgressToNextLevel = () => {
     const totalReports = userData?.total_submissions || 0;
     const currentStatus = getCurrentStatus();
     const currentIndex = STATUS_LEVELS.findIndex(level => level.name === currentStatus.name);
     
-    // If at max level, return null
     if (currentIndex === STATUS_LEVELS.length - 1) {
       return null;
     }
@@ -103,7 +98,6 @@ const ProfileScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
@@ -112,7 +106,6 @@ const ProfileScreen = () => {
           <View style={styles.placeholder} />
         </View>
 
-        {/* Profile Card */}
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
             <Ionicons name="person" size={40} color="white" />
@@ -121,7 +114,6 @@ const ProfileScreen = () => {
           <Text style={styles.userSubtitle}>@{user?.username} • Member since {user?.created_at ? new Date(user.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : '2025'}</Text>
         </View>
 
-        {/* My Status Section */}
         <View style={styles.statusSection}>
           <Text style={styles.sectionTitle}>My Status</Text>
           <View style={styles.statusCard}>
@@ -155,7 +147,6 @@ const ProfileScreen = () => {
           </View>
         </View>
 
-        {/* Stats */}
         <View style={styles.statsContainer}>
           {statsData.map((stat) => (
             <View key={stat.label} style={styles.statCard}>
@@ -169,7 +160,6 @@ const ProfileScreen = () => {
         </View>
 
 
-        {/* Menu Items */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           {menuItems.map((item) => (
@@ -194,7 +184,6 @@ const ProfileScreen = () => {
           ))}
         </View>
 
-        {/* Version */}
         <View style={styles.versionContainer}>
           <Text style={styles.versionText}>PhillySafe v1.0.0</Text>
           <Text style={styles.versionSubtext}>Built with ❤️ for Philadelphia</Text>

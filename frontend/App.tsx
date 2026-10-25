@@ -6,11 +6,9 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-// Authentication
 import { AuthProvider } from "./src/contexts/AuthContext";
 import ProtectedRoute from "./src/components/ProtectedRoute";
 
-// Screens
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import MapScreen from "./src/screens/MapScreen";
 import SearchScreen from "./src/screens/SearchScreen";
@@ -19,13 +17,11 @@ import SnapShot from "./src/screens/Snapshot";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import IncidentDetailsScreen from "./src/screens/IncidentDetailsScreen";
 import LeaderboardScreen from "./src/screens/LeaderboardScreen";
-// Types
 import {
   RootStackParamList,
   MainTabParamList,
 } from "./src/types/navigation";
 
-// Icons (you may need to adjust these based on your icon library)
 import { Ionicons } from "@expo/vector-icons";
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -84,7 +80,7 @@ export default function App() {
 
 
   if (isFirstLaunch === null) {
-    return null; // Loading state
+    return null;
   }
 
   return (

@@ -160,7 +160,6 @@ const UserStats: React.FC<UserStatsProps> = ({ userId, onClose }) => {
       </View>
 
       <View style={styles.content}>
-        {/* Level and XP */}
         <View style={styles.levelCard}>
           <View style={styles.levelHeader}>
             <Text style={styles.levelText}>Level {userData.level}</Text>
@@ -179,7 +178,6 @@ const UserStats: React.FC<UserStatsProps> = ({ userId, onClose }) => {
           </Text>
         </View>
 
-        {/* Stats Grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <Ionicons name="document-text" size={24} color="#007AFF" />
@@ -206,7 +204,6 @@ const UserStats: React.FC<UserStatsProps> = ({ userId, onClose }) => {
           </View>
         </View>
 
-        {/* Achievements */}
         {userData.achievements.length > 0 && (
           <View style={styles.achievementsSection}>
             <Text style={styles.sectionTitle}>Achievements</Text>
@@ -225,7 +222,6 @@ const UserStats: React.FC<UserStatsProps> = ({ userId, onClose }) => {
           </View>
         )}
 
-        {/* Report Types */}
         {Object.keys(userData.submission_types).length > 0 && (
           <View style={styles.typesSection}>
             <Text style={styles.sectionTitle}>Report Types</Text>

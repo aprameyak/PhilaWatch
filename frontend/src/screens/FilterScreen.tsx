@@ -33,7 +33,6 @@ const FilterScreen = () => {
   };
 
   const handleApplyFilters = () => {
-    // Apply filters and go back
     navigation.goBack();
   };
 
@@ -81,7 +80,6 @@ const FilterScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#007AFF" />
@@ -92,7 +90,6 @@ const FilterScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* Time Range */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Time Range</Text>
           <View style={styles.optionsGrid}>
@@ -116,7 +113,6 @@ const FilterScreen = () => {
           </View>
         </View>
 
-        {/* Crime Types */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Incident Types</Text>
           <View style={styles.crimeTypesList}>
@@ -144,7 +140,6 @@ const FilterScreen = () => {
           </View>
         </View>
 
-        {/* Data Sources */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Data Sources</Text>
           
@@ -191,7 +186,6 @@ const FilterScreen = () => {
           </View>
         </View>
 
-        {/* Map Settings */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Map Display</Text>
           
@@ -214,7 +208,6 @@ const FilterScreen = () => {
           </View>
         </View>
 
-        {/* Active Filters Summary */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Active Filters</Text>
           <View style={styles.activeFiltersContainer}>
@@ -248,7 +241,6 @@ const FilterScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Apply Button */}
       <View style={styles.footer}>
         <TouchableOpacity style={styles.applyButton} onPress={handleApplyFilters}>
           <Text style={styles.applyButtonText}>Apply Filters</Text>

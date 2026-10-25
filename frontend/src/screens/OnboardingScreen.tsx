@@ -41,13 +41,12 @@ const OnboardingScreen = () => {
   return (
     <ImageBackground
       source={{
-        uri: process.env.REACT_APP_ONBOARDING_IMAGE_URL || 'https://images.unsplash.com/photo-1641956405046-5e81c5bcff14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGlsYWRlbHBoaWElMjBjaXR5JTIwc2t5bGluZXxlbnwxfHx8fDE3NTgzMzg4MDF8MA&ixlib=rb-4.1.0&q=80&w=1080'
+        uri: process.env.EXPO_PUBLIC_ONBOARDING_IMAGE_URL || 'https://images.unsplash.com/photo-1641956405046-5e81c5bcff14?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwaGlsYWRlbHBoaWElMjBjaXR5JTIwc2t5bGluZXxlbnwxfHx8fDE3NTgzMzg4MDF8MA&ixlib=rb-4.1.0&q=80&w=1080'
       }}
       style={styles.background}
     >
       <View style={styles.overlay} />
       <SafeAreaView style={styles.container}>
-        {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Ionicons name="location" size={40} color="#007AFF" />
@@ -56,7 +55,6 @@ const OnboardingScreen = () => {
           <Text style={styles.subtitle}>Crime Heatmaps & Community Reports</Text>
         </View>
 
-        {/* Features */}
         <View style={styles.featuresContainer}>
           <View style={styles.featureCard}>
             <View style={styles.featureIconContainer}>
@@ -95,7 +93,6 @@ const OnboardingScreen = () => {
           </View>
         </View>
 
-        {/* CTA Buttons */}
         <View style={styles.ctaContainer}>
           <TouchableOpacity style={styles.primaryButton} onPress={handleLocationPermission}>
             <Ionicons name="location" size={20} color="white" style={styles.buttonIcon} />

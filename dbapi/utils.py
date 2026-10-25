@@ -1,4 +1,3 @@
-
 danger_scores = {
     "Homicide - Criminal": 5,
     "Robbery Firearm": 5,

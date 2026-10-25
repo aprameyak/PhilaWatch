@@ -7,17 +7,12 @@ from score import score_single
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
 app = Flask(__name__)
 
-# Load CSV file from environment variable
 CSV_FILE_PATH = os.getenv("CSV_FILE_PATH", "crime_2025.csv")
 df = pd.read_csv(CSV_FILE_PATH)
-
-
-
 
 
 @app.route("/", methods=["GET"])
@@ -33,18 +28,15 @@ def insert():
         new_row = {col: str(data.get(col)) 
                    for col in df.columns}
 
-        # Infer danger_score if missing/empty
         if not new_row.get("danger_score"):
             new_row["danger_score"] = score_single(
                 str(new_row.get("text_general_code")),
                 str(new_row.get("description"))
             )
 
-        # Append row correctly
         copy = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         copy.to_csv(CSV_FILE_PATH, index=False)
 
-        # Return last row as JSON
         last_row = copy.iloc[-1, :].to_dict()
         last_row["_id"] = len(copy) - 1
         return last_row
@@ -54,8 +46,6 @@ def insert():
         return {"error": str(e)}
 
     
-
-
 @app.route("/score", methods=["POST"])
 def score():
     try:
@@ -110,11 +100,7 @@ def all_crime():
 
 @app.route("/incidents/<string:id>", methods=["POST"])
 def get_data(id):
-    #id = db index
     return df.iloc[int(id), :].T.to_json()
-
-
-
 
 
 if __name__ == "__main__":

@@ -13,7 +13,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { apiService, UserData } from '../services/api';
 
-// Status levels with dynamic thresholds (same as ProfileScreen)
 const STATUS_LEVELS = [
   { name: 'Newbie Helper', minReports: 0, maxReports: 2, icon: 'leaf', color: '#8E8E93', description: 'Just got started' },
   { name: 'Good Samaritan', minReports: 3, maxReports: 7, icon: 'heart', color: '#34C759', description: 'Helped a few people' },
@@ -55,31 +54,30 @@ const LeaderboardScreen = () => {
   const getRankIcon = (index: number) => {
     switch (index) {
       case 0:
-        return { name: 'trophy', color: '#FFD700' }; // Gold
+        return { name: 'trophy', color: '#FFD700' };
       case 1:
-        return { name: 'medal', color: '#C0C0C0' }; // Silver
+        return { name: 'medal', color: '#C0C0C0' };
       case 2:
-        return { name: 'medal', color: '#CD7F32' }; // Bronze
+        return { name: 'medal', color: '#CD7F32' };
       default:
-        return { name: 'person', color: '#8E8E93' }; // Default
+        return { name: 'person', color: '#8E8E93' };
     }
   };
 
   const getRankColor = (index: number) => {
     switch (index) {
       case 0:
-        return '#FFD700'; // Gold
+        return '#FFD700';
       case 1:
-        return '#C0C0C0'; // Silver
+        return '#C0C0C0';
       case 2:
-        return '#CD7F32'; // Bronze
+        return '#CD7F32';
       default:
-        return '#8E8E93'; // Default
+        return '#8E8E93';
     }
   };
 
   const formatUserDisplayName = (userData: UserData) => {
-    // Try to get display name from user data, fallback to user_id
     return userData.user_id || 'Anonymous User';
   };
 
@@ -87,7 +85,6 @@ const LeaderboardScreen = () => {
     return user?.username === userData.user_id;
   };
 
-  // Calculate current status based on total submissions
   const getCurrentStatus = (userData: UserData) => {
     const totalReports = userData.total_submissions || 0;
     return STATUS_LEVELS.find(level => 

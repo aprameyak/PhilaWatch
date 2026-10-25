@@ -21,12 +21,10 @@ const SearchScreen = () => {
     navigation.goBack();
   };
 
-  // Extract unique neighborhoods from real crime data
   const neighborhoods = React.useMemo(() => {
     const uniqueNeighborhoods = new Set<string>();
     incidents.forEach(incident => {
       if (incident.location_block) {
-        // Extract neighborhood from location_block (e.g., "100 BLOCK N 2ND ST" -> "N 2ND ST")
         const parts = incident.location_block.split(' ');
         if (parts.length > 2) {
           const neighborhood = parts.slice(2).join(' ');
@@ -37,7 +35,6 @@ const SearchScreen = () => {
     return Array.from(uniqueNeighborhoods).sort((a, b) => a.localeCompare(b));
   }, [incidents]);
 
-  // Extract unique locations from real crime data
   const locations = React.useMemo(() => {
     const uniqueLocations = new Set<string>();
     incidents.forEach(incident => {

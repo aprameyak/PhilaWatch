@@ -27,3 +27,11 @@ This was our first time using an LLM (Cerebras too, at that) with CSV data, so w
 
 ### What's next for PhilaWatch
 While looking for crime data to use, we found data more pertinent towards giving danger scores for times and places, which could be helpful in making people aware of areas on the go. We also want to look into using larger models for object detection, since our proof-of-concept using a set number of crime indicators showed the promise of using pretrained models. Beyond implementation, we want to get PhilaWatch in the hands of the people and police of Philly, turning it into a tool people can use quickly and continuously and have an observable effect on Philly's crime scene
+
+### Running locally
+```
+./setup-env.sh
+cd backend && ./run.sh
+cd frontend && npm install && npx expo start
+```
+The app talks to `backend/` (FastAPI + MongoDB) on port 8000. `dbapi/` serves the crime CSV and danger scores, and `authapi/` is the original auth service.

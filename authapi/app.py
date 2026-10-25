@@ -9,12 +9,8 @@ import datetime
 import os
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# -------------------
-# Database Setup
-# -------------------
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./users.db")
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
@@ -29,9 +25,6 @@ class User(Base):
 
 Base.metadata.create_all(bind=engine)
 
-# -------------------
-# Security Setup
-# -------------------
 SECRET_KEY = os.getenv("SECRET_KEY", "supersecretkey")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "30"))
@@ -46,9 +39,6 @@ def get_db():
     finally:
         db.close()
 
-# -------------------
-# Utility Functions
-# -------------------
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -64,9 +54,6 @@ def create_access_token(data: dict, expires_delta: datetime.timedelta | None = N
 def get_user(db: Session, username: str):
     return db.query(User).filter(User.username == username).first()
 
-# -------------------
-# FastAPI App
-# -------------------
 app = FastAPI()
 
 @app.post("/register")
