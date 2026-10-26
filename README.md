@@ -2,7 +2,7 @@
 
 PhilaWatch is a React Native (Expo) app for people walking around Philadelphia. It shows a heatmap of recent crime incidents, lets users report signs of crime such as vandalism or broken lights, and ranks contributors on a public leaderboard.
 
-Built at PennApps XXVI by [AmarDhillon05](https://github.com/AmarDhillon05) and [aprameyak](https://github.com/aprameyak).
+Built at PennApps XXVI.
 
 ## Features
 
@@ -73,7 +73,7 @@ setup-env.sh
 
 ## Background
 
-Adapted from the original hackathon write-up by AmarDhillon05.
+Adapted from the original hackathon write-up.
 
 Before the hackathon, friends in Philadelphia told the team the city could be hard to walk in, and the first night there confirmed it. The goal was a social sustainability project that helps people avoid bad situations while making it lighter to talk about and report crime, which is why reporting is gamified with points and a leaderboard. The hardest parts were merging components that had been built against assumed APIs, and keeping the tone light enough to encourage contributions while staying serious about what witnessing a crime means. Ideas for next steps include time-and-place specific danger scores, larger object detection models beyond the current set of crime indicators, and getting the app in front of Philadelphia residents and police.
 
